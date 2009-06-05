@@ -258,11 +258,11 @@ word LoopZ80(register Z80 *R)
     SDL_Event evt;
     while(SDL_PollEvent(&evt))
     {
-	    switch(evt.type)
+        switch(evt.type)
         {
-		  case SDL_QUIT:
-		    return INT_QUIT;
-	    }
+          case SDL_QUIT:
+            return INT_QUIT;
+        }
     }
 
     handleInput();
