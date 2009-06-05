@@ -1,0 +1,2 @@
+@gfxrip.py
+@pause
