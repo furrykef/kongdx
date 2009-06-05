@@ -1,7 +1,6 @@
 #include <cassert>
 #include <iostream>
 #include <fstream>
-#include <vector>
 #include <SDL.h>
 #include "Z80/Z80.h"
 
@@ -11,9 +10,9 @@ void handleInput();
 
 const char *ROM_FILENAME = "dkong.rom";
 
-std::vector<unsigned char> ROM;
-std::vector<unsigned char> RAM;
-std::vector<unsigned char> VRAM;
+unsigned char ROM[0x4000];
+unsigned char RAM[0x1000];
+unsigned char VRAM[0x400];
 int IN0, IN1, IN2, DSW1;
 SDL_Surface *screen;
 SDL_Surface *tiles;
@@ -28,15 +27,11 @@ int main(int argc, char *argv[])
 {
     std::cout << "Welcome to Kong DX!" << std::endl;
 
-    ROM.resize(0x4000);
-    RAM.resize(0x1000);
-    VRAM.resize(0x400);
-
     std::cout << "Loading program ROM..." << std::endl;
 
     {
         std::ifstream rom_file(ROM_FILENAME, std::ifstream::in | std::ifstream::binary);
-        rom_file.read(reinterpret_cast<char *>(&ROM[0]), 0x4000);
+        rom_file.read(reinterpret_cast<char *>(ROM), 0x4000);
     }
 
     std::cout << "Done loading ROM." << std::endl;
