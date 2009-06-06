@@ -1,9 +1,7 @@
 TODO:
 * Virtually everything :)
-* Debug build is broken (can't link against SDL properly)
 * Too many global variables
 * Not enough modularity
 * No error checking (esp. checking to see if files aren't found or are wrong dimensions/bpp)
-* Contact Marat Fayzullin about use of his Z80 core (per his request to be notified of all projects using it)
-  ...unless we switch to another Z80 core early on, of course
 * SDL_Init doesn't enable threading or whatever it is on non-Win32 systems
+* Z80 code doesn't use stdint.h (or a replacement for it); simply assumes uint16 = unsigned short, etc.

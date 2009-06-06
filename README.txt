@@ -9,11 +9,7 @@ Building the source
 -------------------
 We use CMake: http://www.cmake.org/
 
-To build, you will need Marat Fayzullin's Z80 core. It has not been
-included because it is not open-source software under the Open Source
-Definition. Get it from http://fms.komkon.org/EMUL8/ -- it's labeled
-Z80 Portable Emulation Package. Unzip it to the source directory in
-a folder named "z80". It should work unmodified.
+You will need SDL to build.
 
 
 Misc. notes

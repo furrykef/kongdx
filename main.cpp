@@ -1,13 +1,35 @@
-#include <cassert>
+/*
+    Copyright 2009 Kef Schecter
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 49 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+*/
 #include <iostream>
 #include <fstream>
-#include <SDL.h>
-#include "Z80/Z80.h"
+#include "SDL.h"
+#include "z80/z80.h"
 
+void mainLoop();
 void resetGame();
 void drawScreen();
 void handleInput();
 SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip);
+void writebyte(uint16, uint8);
+uint8 readbyte(uint16);
+void writeport(uint16, uint8);
+uint8 readport(uint16);
+bool LoopZ80();
 
 const char *ROM_FILENAME = "dkong.rom";
 
@@ -19,8 +41,6 @@ SDL_Surface *screen;
 SDL_Surface *tiles;
 SDL_Surface *sprite_surfs[4];   // 0 = no flip, 1 = horizontal flip, etc.
 bool g_vblank;                  // Tracks if vblank interrupts enabled
-
-Z80 g_z80;
 
 const int CYCLES_PER_VBLANK = 3072000 / 60;     // Is this correct?
 
@@ -51,11 +71,36 @@ int main(int argc, char *argv[])
     sprite_surfs[3] = makeFlippedSprites(sprite_surfs[0], true, true);
     std::cout << "Done loading graphics." << std::endl;
 
+    z80_init();
+    z80_readbyte = readbyte;
+    z80_writebyte = writebyte;
+    z80_readport = readport;
+    z80_writeport = writeport;
     resetGame();
-    RunZ80(&g_z80);
+    mainLoop();
 
     // @XXX@ - cleanup?
     return 0;
+}
+
+void mainLoop()
+{
+    int cycle_count = 0;
+    for(;;)
+    {
+        z80_do_opcode();
+        ++cycle_count;
+        if(cycle_count >= CYCLES_PER_VBLANK)
+        {
+            // Time for vblank interrupt
+            // (SDL processing happens here too)
+            cycle_count -= CYCLES_PER_VBLANK;
+            if(!LoopZ80())
+            {
+                return;
+            }
+        }
+    }
 }
 
 void resetGame()
@@ -65,8 +110,7 @@ void resetGame()
     IN2 = 0;
     DSW1 = 0x80;        // Factory setting
     g_vblank = false;
-    g_z80.IPeriod = CYCLES_PER_VBLANK;
-    ResetZ80(&g_z80);
+    z80_reset();
 }
 
 void drawScreen()
@@ -226,21 +270,21 @@ SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip)
 }
 
 
-void WrZ80(register word Addr, register byte Value)
+void writebyte(uint16 addr, uint8 value)
 {
-    if(Addr >= 0x6000 && Addr < 0x7000)
+    if(addr >= 0x6000 && addr < 0x7000)
     {
-        RAM[Addr - 0x6000] = Value;
+        RAM[addr - 0x6000] = value;
     }
-    else if(Addr >= 0x7400 && Addr < 0x7800)
+    else if(addr >= 0x7400 && addr < 0x7800)
     {
-        VRAM[Addr - 0x7400] = Value;
+        VRAM[addr - 0x7400] = value;
     }
-    else if(Addr == 0x7c00)
+    else if(addr == 0x7c00)
     {
         /*std::cout << "Music/sound effect: ";
 
-        switch(Value)
+        switch(value)
         {
         case 0: std::cout << "null"; break;
         case 1: std::cout << "Dragnet"; break;
@@ -264,43 +308,43 @@ void WrZ80(register word Addr, register byte Value)
 
         std::cout << std::endl;*/
     }
-    else if(Addr == 0x7d84)
+    else if(addr == 0x7d84)
     {
-        g_vblank = (Value != 0);
+        g_vblank = (value != 0);
     }
-    else if(Addr == 0x7d86 || Addr == 0x7d87)
+    else if(addr == 0x7d86 || addr == 0x7d87)
     {
         //std::cout << "Palette selector" << std::endl;
     }
 }
 
-byte RdZ80(register word Addr)
+uint8 readbyte(uint16 addr)
 {
-    if(Addr < 0x4000)
+    if(addr < 0x4000)
     {
-        return ROM[Addr];
+        return ROM[addr];
     }
-    else if(Addr >= 0x6000 && Addr < 0x7000)
+    else if(addr >= 0x6000 && addr < 0x7000)
     {
-        return RAM[Addr - 0x6000];
+        return RAM[addr - 0x6000];
     }
-    else if(Addr >= 0x7400 && Addr < 0x7800)
+    else if(addr >= 0x7400 && addr < 0x7800)
     {
-        return VRAM[Addr - 0x7400];
+        return VRAM[addr - 0x7400];
     }
-    else if(Addr == 0x7c00)
+    else if(addr == 0x7c00)
     {
         return IN0;
     }
-    else if(Addr == 0x7c80)
+    else if(addr == 0x7c80)
     {
         return IN1;
     }
-    else if(Addr == 0x7d00)
+    else if(addr == 0x7d00)
     {
         return IN2;
     }
-    else if(Addr == 0x7d80)
+    else if(addr == 0x7d80)
     {
         return DSW1;
     }
@@ -308,25 +352,23 @@ byte RdZ80(register word Addr)
     return 0;
 }
 
-void OutZ80(register word Port, register byte Value)
+void writeport(uint16 port, uint8 value)
 {
     // Not used
 }
 
-byte InZ80(register word Port)
+uint8 readport(uint16 port)
 {
     // Not used
     return 0;
 }
 
-void PatchZ80(register Z80 *R)
+bool LoopZ80()
 {
-    // Not used
-}
-
-word LoopZ80(register Z80 *R)
-{
-    static bool fullscreen = false;
+    if(g_vblank)
+    {
+        z80_nmi();
+    }
 
     // SDL events
     SDL_Event evt;
@@ -337,6 +379,8 @@ word LoopZ80(register Z80 *R)
           case SDL_KEYDOWN:
             if(evt.key.keysym.sym == SDLK_RETURN && (evt.key.keysym.mod & KMOD_ALT))
             {
+                static bool fullscreen = false;
+
                 fullscreen = !fullscreen;
                 screen = SDL_SetVideoMode(
                     224, 256, 32,
@@ -345,12 +389,12 @@ word LoopZ80(register Z80 *R)
             }
             else if(evt.key.keysym.sym == SDLK_ESCAPE)
             {
-                return INT_QUIT;
+                return false;
             }
             break;
 
           case SDL_QUIT:
-            return INT_QUIT;
+            return false;
         }
     }
 
@@ -363,5 +407,5 @@ word LoopZ80(register Z80 *R)
     // (or find better timing mechanism)
     SDL_Delay(10);
 
-    return g_vblank ? INT_NMI : INT_NONE;
+    return true;
 }

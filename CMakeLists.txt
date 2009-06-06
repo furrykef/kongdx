@@ -11,10 +11,11 @@ link_libraries(
    SDLmain
 )
 
-add_executable(kongdx main.cpp z80/Z80.c)
+
+add_executable(kongdx main.cpp z80/z80.cpp z80/z80_ops.cpp)
 
 
-# Needed for Marat's CPU core
+# Needed for Z80 code
 test_big_endian(BIG_ENDIAN)
 if(BIG_ENDIAN)
   set(ENDIAN_FLAG "MSB_FIRST")
