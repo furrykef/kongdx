@@ -365,11 +365,11 @@ word LoopZ80(register Z80 *R)
           case SDL_KEYDOWN:
             if(evt.key.keysym.sym == SDLK_RETURN && (evt.key.keysym.mod & KMOD_ALT))
             {
+                fullscreen = !fullscreen;
                 screen = SDL_SetVideoMode(
                     224, 256, 32,
                     fullscreen ? (SDL_FULLSCREEN | SDL_HWSURFACE) : SDL_SWSURFACE
                 );
-                fullscreen = !fullscreen;
             }
             else if(evt.key.keysym.sym == SDLK_ESCAPE)
             {
