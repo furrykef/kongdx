@@ -108,7 +108,7 @@ void drawScreen()
 
         src.x = sprite_id*16;
 
-        dest.x = RAM[offset] - 24;
+        dest.x = RAM[offset] - 23;
         dest.y = RAM[offset+3] - 8;
 
         //std::cout << "Sprite: " << dest.x << ", " << dest.y << std::endl;
