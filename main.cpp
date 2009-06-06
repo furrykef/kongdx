@@ -232,19 +232,9 @@ void WrZ80(register word Addr, register byte Value)
     {
         RAM[Addr - 0x6000] = Value;
     }
-    else if(Addr >= 0x7000 && Addr < 0x7400)
-    {
-        // Ignore; nobody knows what the crap this region is,
-        // not even the MAME guys :)
-    }
     else if(Addr >= 0x7400 && Addr < 0x7800)
     {
         VRAM[Addr - 0x7400] = Value;
-    }
-    else if(Addr >= 0x7800 && Addr < 0x7810)
-    {
-        // @XXX@
-        //std::cout << "DMA write" << std::endl;
     }
     else if(Addr == 0x7c00)
     {
@@ -278,20 +268,9 @@ void WrZ80(register word Addr, register byte Value)
     {
         g_vblank = (Value != 0);
     }
-    else if(Addr == 0x7d85)
-    {
-        // @XXX@
-        //std::cout << "DMA 1/0 toggle" << std::endl;
-    }
     else if(Addr == 0x7d86 || Addr == 0x7d87)
     {
         //std::cout << "Palette selector" << std::endl;
-    }
-    else
-    {
-        /*std::cout << std::hex;
-        std::cout << "Write " << int(Value) << " to " << Addr << std::endl;
-        std::cout << std::dec;*/
     }
 }
 
@@ -325,15 +304,8 @@ byte RdZ80(register word Addr)
     {
         return DSW1;
     }
-    else
-    {
-        /*std::cout << std::hex;
-        std::cout << "Read from " << Addr << std::endl;
-        std::cout << std::dec;*/
-        return 0;
-    }
 
-    assert(!"Can't get here.");
+    return 0;
 }
 
 void OutZ80(register word Port, register byte Value)
