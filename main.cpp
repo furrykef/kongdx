@@ -7,6 +7,7 @@
 void resetGame();
 void drawScreen();
 void handleInput();
+SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip);
 
 const char *ROM_FILENAME = "dkong.rom";
 
@@ -16,8 +17,8 @@ unsigned char VRAM[0x400];
 int IN0, IN1, IN2, DSW1;
 SDL_Surface *screen;
 SDL_Surface *tiles;
-SDL_Surface *sprites;
-bool g_vblank;          // Tracks if vblank interrupts enabled
+SDL_Surface *sprite_surfs[4];   // 0 = no flip, 1 = horizontal flip, etc.
+bool g_vblank;                  // Tracks if vblank interrupts enabled
 
 Z80 g_z80;
 
@@ -43,8 +44,11 @@ int main(int argc, char *argv[])
 
     std::cout << "Loading graphics..." << std::endl;
     tiles = SDL_LoadBMP("tiles.bmp");
-    sprites = SDL_LoadBMP("sprites.bmp");
-    SDL_SetColorKey(sprites, SDL_SRCCOLORKEY, 0);
+    sprite_surfs[0] = SDL_LoadBMP("sprites.bmp");
+    SDL_SetColorKey(sprite_surfs[0], SDL_SRCCOLORKEY, 0);
+    sprite_surfs[1] = makeFlippedSprites(sprite_surfs[0], true, false);
+    sprite_surfs[2] = makeFlippedSprites(sprite_surfs[0], false, true);
+    sprite_surfs[3] = makeFlippedSprites(sprite_surfs[0], true, true);
     std::cout << "Done loading graphics." << std::endl;
 
     resetGame();
@@ -104,15 +108,25 @@ void drawScreen()
     {
         int sprite_id = RAM[offset+1] & 0x7f;
         //int palette = RAM[offset+2] & 0x7f;
-        //bool flip_x = RAM[offset+1] & 0x80;
-        //bool flip_y = RAM[offset+2] & 0x80;
+        bool flip_x = (RAM[offset+1] & 0x80) != 0;
+        bool flip_y = (RAM[offset+2] & 0x80) != 0;
+
+        int sprite_surf_idx = 0;
+        if(flip_x)
+        {
+            sprite_surf_idx |= 1;
+        }
+        if(flip_y)
+        {
+            sprite_surf_idx |= 2;
+        }
 
         src.x = sprite_id*16;
 
         dest.x = RAM[offset] - 23;
         dest.y = RAM[offset+3] - 8;
 
-        SDL_BlitSurface(sprites, &src, screen, &dest);
+        SDL_BlitSurface(sprite_surfs[sprite_surf_idx], &src, screen, &dest);
     }
 }
 
@@ -165,6 +179,50 @@ void handleInput()
     {
         IN0 |= 0x10;
     }
+}
+
+SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip)
+{
+    SDL_Surface *surf = SDL_CreateRGBSurface(
+        SDL_SWSURFACE,
+        2048, 16, 24,
+        src->format->Rmask,
+        src->format->Gmask,
+        src->format->Bmask,
+        0
+    );
+    SDL_SetColorKey(surf, SDL_SRCCOLORKEY, 0);
+
+    // Note: No locking necessary since we're working solely with software surfaces
+    char *src_pixels = static_cast<char *>(src->pixels);
+    char *dst_pixels = static_cast<char *>(surf->pixels);
+    for(int i = 0; i < 2048*16; ++i)
+    {
+        int sprite_num = (i % 2048)/16;
+        int sprite_x = i%16;
+        int sprite_y = i/2048;
+
+        if(hflip)
+        {
+            sprite_x = 15 - sprite_x;
+        }
+
+        if(vflip)
+        {
+            sprite_y = 15 - sprite_y;
+        }
+
+        int src_x = sprite_num*16 + sprite_x;
+
+        int src_idx = (sprite_y*2048+src_x)*3;
+        int dst_idx = i*3;
+
+        dst_pixels[dst_idx] = src_pixels[src_idx];
+        dst_pixels[dst_idx+1] = src_pixels[src_idx+1];
+        dst_pixels[dst_idx+2] = src_pixels[src_idx+2];
+    }
+
+    return surf;
 }
 
 
