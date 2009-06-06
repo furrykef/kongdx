@@ -16,6 +16,7 @@ unsigned char VRAM[0x400];
 int IN0, IN1, IN2, DSW1;
 SDL_Surface *screen;
 SDL_Surface *tiles;
+SDL_Surface *sprites;
 bool g_vblank;          // Tracks if vblank interrupts enabled
 
 Z80 g_z80;
@@ -42,6 +43,7 @@ int main(int argc, char *argv[])
 
     std::cout << "Loading graphics..." << std::endl;
     tiles = SDL_LoadBMP("tiles.bmp");
+    sprites = SDL_LoadBMP("sprites.bmp");
     std::cout << "Done loading graphics." << std::endl;
 
     resetGame();
@@ -66,7 +68,9 @@ void drawScreen()
 {
     SDL_Rect src, dest;
 
-    // These never change
+    /*** Draw tiles ***/
+    // These never change in the loop
+    src.y = 0;
     src.w = 8;
     src.h = 8;
     dest.w = 8;
@@ -78,11 +82,38 @@ void drawScreen()
         {
             int tile_id = VRAM[y*32+x];
             src.x = tile_id*8;
-            src.y = 0;
+
+            // Note that we're rotating the display 90 degrees here
             dest.x = (29-y)*8;
             dest.y = x*8;
+ 
             SDL_BlitSurface(tiles, &src, screen, &dest);
         }
+    }
+
+    /*** Draw sprites ***/
+    // These never change in the loop
+    src.y = 0;
+    src.w = 16;
+    src.h = 16;
+    dest.w = 16;
+    dest.w = 16;
+
+    for(int offset = 0x900; offset < 0xa80; offset += 4)
+    {
+        int sprite_id = RAM[offset+1] & 0x7f;
+        //int palette = RAM[offset+2] & 0x7f;
+        //bool flip_x = RAM[offset+1] & 0x80;
+        //bool flip_y = RAM[offset+2] & 0x80;
+
+        src.x = sprite_id*16;
+
+        dest.x = RAM[offset] - 24;
+        dest.y = RAM[offset+3] - 8;
+
+        //std::cout << "Sprite: " << dest.x << ", " << dest.y << std::endl;
+
+        SDL_BlitSurface(sprites, &src, screen, &dest);
     }
 }
 
