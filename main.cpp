@@ -21,6 +21,7 @@
 #include "z80/z80.h"
 
 void mainLoop();
+void loadROMs();
 void resetGame();
 void drawScreen();
 void handleInput();
@@ -30,8 +31,6 @@ uint8 readbyte(uint16);
 void writeport(uint16, uint8);
 uint8 readport(uint16);
 bool LoopZ80();
-
-const char *ROM_FILENAME = "dkong.rom";
 
 unsigned char ROM[0x4000];
 unsigned char RAM[0x1000];
@@ -49,14 +48,9 @@ int main(int argc, char *argv[])
 {
     std::cout << "Welcome to Kong DX!" << std::endl;
 
-    std::cout << "Loading program ROM..." << std::endl;
-
-    {
-        std::ifstream rom_file(ROM_FILENAME, std::ifstream::in | std::ifstream::binary);
-        rom_file.read(reinterpret_cast<char *>(ROM), 0x4000);
-    }
-
-    std::cout << "Done loading ROM." << std::endl;
+    std::cout << "Loading program ROMs..." << std::endl;
+    loadROMs();
+    std::cout << "Done loading ROMs." << std::endl;
 
     SDL_Init(SDL_INIT_VIDEO);
     screen = SDL_SetVideoMode(224, 256, 32, SDL_SWSURFACE);
@@ -100,6 +94,26 @@ void mainLoop()
                 return;
             }
         }
+    }
+}
+
+void loadROMs()
+{
+    {
+        std::ifstream rom_file("roms/dkong/c_5et_g.bin", std::ifstream::in | std::ifstream::binary);
+        rom_file.read(reinterpret_cast<char *>(ROM), 0x1000);
+    }
+    {
+        std::ifstream rom_file("roms/dkong/c_5ct_g.bin", std::ifstream::in | std::ifstream::binary);
+        rom_file.read(reinterpret_cast<char *>(&ROM[0x1000]), 0x1000);
+    }
+    {
+        std::ifstream rom_file("roms/dkong/c_5bt_g.bin", std::ifstream::in | std::ifstream::binary);
+        rom_file.read(reinterpret_cast<char *>(&ROM[0x2000]), 0x1000);
+    }
+    {
+        std::ifstream rom_file("roms/dkong/c_5at_g.bin", std::ifstream::in | std::ifstream::binary);
+        rom_file.read(reinterpret_cast<char *>(&ROM[0x3000]), 0x1000);
     }
 }
 

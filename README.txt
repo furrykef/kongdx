@@ -2,7 +2,6 @@ Running the emulator
 --------------------
 The emulator is not easily runnable by the public at this time,
 because doing so would involve distributing data ripped from the ROMs.
-The ROMs themselves are also in a non-standard format.
 
 
 Building the source

@@ -6,20 +6,23 @@ from PIL import Image
 
 
 # Note: needs trailing slash
-ROMDIR = 'ROMs/dkong/'
+ROMDIR = 'roms/dkong/'
 
 
 tile_palette = [(0, 0, 0),
-                (0x88, 0x88, 0x88),
-                (0xcc, 0xcc, 0xcc),
-                (0xff, 0xff, 0xff)]
+                (0xFA, 0x28, 0x99),
+                (0xBA, 0x0D, 0x33),
+                (0x00, 0xFB, 0xFF)]
 
 tile_files = [
     "v_5h_b.bin",
     "v_3pt.bin"
 ]
 
-spr_palette = tile_palette
+spr_palette = [(0, 0, 0),
+               (0xB7, 0, 0),
+               (0xFB, 0xBA, 0x99),
+               (0x44, 0x8C, 0xCB)]
 
 top_spr_files = [
     "l_4m_b.bin",
