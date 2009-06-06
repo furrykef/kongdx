@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
     std::cout << "Loading graphics..." << std::endl;
     tiles = SDL_LoadBMP("tiles.bmp");
     sprites = SDL_LoadBMP("sprites.bmp");
+    SDL_SetColorKey(sprites, SDL_SRCCOLORKEY, 0);
     std::cout << "Done loading graphics." << std::endl;
 
     resetGame();
@@ -111,8 +112,6 @@ void drawScreen()
         dest.x = RAM[offset] - 23;
         dest.y = RAM[offset+3] - 8;
 
-        //std::cout << "Sprite: " << dest.x << ", " << dest.y << std::endl;
-
         SDL_BlitSurface(sprites, &src, screen, &dest);
     }
 }
@@ -123,31 +122,48 @@ void handleInput()
     int num_keys;
     Uint8 *keystate = SDL_GetKeyState(&num_keys);
 
+    IN0 = 0;
+    IN1 = 0;
+    IN2 = 0;
+
     if(keystate[SDLK_5])
     {
         IN2 |= 0x80;
-    }
-    else
-    {
-        IN2 &= ~0x80;
     }
 
     if(keystate[SDLK_1])
     {
         IN2 |= 4;
     }
-    else
-    {
-        IN2 &= ~4;
-    }
 
     if(keystate[SDLK_2])
     {
         IN2 |= 8;
     }
-    else
+
+    if(keystate[SDLK_RIGHT])
     {
-        IN2 &= ~8;
+        IN0 |= 1;
+    }
+
+    if(keystate[SDLK_LEFT])
+    {
+        IN0 |= 2;
+    }
+
+    if(keystate[SDLK_UP])
+    {
+        IN0 |= 4;
+    }
+
+    if(keystate[SDLK_DOWN])
+    {
+        IN0 |= 8;
+    }
+
+    if(keystate[SDLK_LCTRL])
+    {
+        IN0 |= 0x10;
     }
 }
 

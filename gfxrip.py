@@ -19,6 +19,8 @@ tile_files = [
     "v_3pt.bin"
 ]
 
+spr_palette = tile_palette
+
 top_spr_files = [
     "l_4m_b.bin",
     "l_4r_b.bin",
@@ -57,8 +59,8 @@ def main(argv=None):
     bottom_spr_data = decode(bottom_spr_files)
 
     # Convert paletted values to RGB values
-    top_spr_data = [tile_palette[x] for x in top_spr_data]
-    bottom_spr_data = [tile_palette[x] for x in bottom_spr_data]
+    top_spr_data = [spr_palette[x] for x in top_spr_data]
+    bottom_spr_data = [spr_palette[x] for x in bottom_spr_data]
 
     spr_img = Image.new("RGB", (2048, 16))
     for offset in range(0, len(top_spr_data), 64):
