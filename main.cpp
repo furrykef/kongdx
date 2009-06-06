@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
     std::cout << "Done loading ROM." << std::endl;
 
     SDL_Init(SDL_INIT_VIDEO);
-    screen = SDL_SetVideoMode(224, 256, 8, SDL_SWSURFACE);
+    screen = SDL_SetVideoMode(224, 256, 32, SDL_SWSURFACE);
     SDL_WM_SetCaption("Kong DX", "Kong DX");
 
     std::cout << "Loading graphics..." << std::endl;
@@ -354,12 +354,29 @@ void PatchZ80(register Z80 *R)
 
 word LoopZ80(register Z80 *R)
 {
+    static bool fullscreen = false;
+
     // SDL events
     SDL_Event evt;
     while(SDL_PollEvent(&evt))
     {
         switch(evt.type)
         {
+          case SDL_KEYDOWN:
+            if(evt.key.keysym.sym == SDLK_RETURN && (evt.key.keysym.mod & KMOD_ALT))
+            {
+                screen = SDL_SetVideoMode(
+                    224, 256, 32,
+                    fullscreen ? (SDL_FULLSCREEN | SDL_HWSURFACE) : SDL_SWSURFACE
+                );
+                fullscreen = !fullscreen;
+            }
+            else if(evt.key.keysym.sym == SDLK_ESCAPE)
+            {
+                return INT_QUIT;
+            }
+            break;
+
           case SDL_QUIT:
             return INT_QUIT;
         }
