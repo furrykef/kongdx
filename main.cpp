@@ -40,7 +40,7 @@ int IN0, IN1, IN2, DSW1;
 SDL_Surface *screen;
 SDL_Surface *tiles;
 SDL_Surface *sprite_surfs[4];   // 0 = no flip, 1 = horizontal flip, etc.
-bool g_vblank_enabled;                  // Tracks if vblank interrupts enabled
+bool g_vblank_enabled;          // Tracks if vblank interrupts enabled
 
 Mix_Music *dragnet;
 Mix_Music *howhigh;

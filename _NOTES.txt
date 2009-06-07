@@ -1,7 +1,7 @@
 TODO:
 * Virtually everything :)
 * Too many global variables
-* Not enough modularity
+* Not enough modularity?
 * No error checking (esp. checking to see if files aren't found or are wrong dimensions/bpp)
 * SDL_Init doesn't enable SDL_INIT_EVENTTHREAD on non-Win32 systems
 * Z80 code doesn't use stdint.h (or a replacement for it); simply assumes uint16 = unsigned short, etc.
@@ -9,3 +9,4 @@ TODO:
 * Make SDL_mixer optional instead of required
 * Use OpenGL instead of SDL for video (higher performance)?
 * We don't reload graphics when toggling fullscreen (fullscreen mode may have different pixel format)
+* Improper speed throttling
