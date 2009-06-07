@@ -10,28 +10,40 @@ from PIL import Image
 ROMDIR = 'roms/dkong/'
 
 
-pal_unknown = [(0, 0, 0),
+black = (0, 0, 0)
+red = (0xff, 0, 0)
+blue = (0, 0, 0xff)
+peach = (0xFD, 0xC6, 0x89)
+orange = (0xff, 0xaa, 0x00)
+brown = (0x9E, 0x0B, 0x0E)
+purple = (0xff, 0, 0xff)
+cyan = (0x00, 0xff, 0xff)
+white = (0xff, 0xff, 0xff)
+
+pal_unknown = [black,
                (0x88, 0x88, 0x88),
                (0xcc, 0xcc, 0xcc),
-               (0xff, 0xff, 0xff)]
+               white]
 
-pal_girder = [(0, 0, 0),
+pal_girder = [black,
               (0xFA, 0x28, 0x99),
               (0xBA, 0x0D, 0x33),
               (0x00, 0xFB, 0xFF)]
 
-pal_mario = [(0, 0, 0),
-             (0xFD, 0xC6, 0x89),
-             (0xff, 0, 0),
-             (0, 0, 0xff)]
+# Uses off-black color to avoid color key
+pal_blkarea = [black, black, black, (0x01, 0, 0)]
 
-pal_pauline = [(0, 0, 0),
-               (0xff, 0xff, 0xff),
-               (0xff, 0xaa, 0x00),
-               (0x00, 0x80, 0xff)]
+pal_mario = [black, peach, red, blue]
+pal_paultop = [black, white, orange, purple]
+pal_paulbot = [black, blue, white, purple]
+pal_barrel = [black, blue, orange, brown]
+pal_dktop = [black, brown, peach, white]
+pal_dkbody = [black, brown, peach, orange]
+pal_oilbarl = [black, white, cyan, blue]
+pal_fire = [black, orange, red, white]
+pal_spring = pal_oilbarl    # Wrong
 
 tile_palettes = [pal_girder]*256
-
 tile_palettes[255] = pal_mario
 
 tile_files = [
@@ -42,14 +54,14 @@ tile_files = [
 spr_palettes = [
     pal_mario,   pal_mario,   pal_mario,   pal_mario,   pal_mario,   pal_mario,   pal_mario,   pal_mario,
     pal_mario,   pal_mario,   pal_mario,   pal_mario,   pal_mario,   pal_mario,   pal_mario,   pal_mario,
-    pal_pauline, pal_pauline, pal_pauline, pal_pauline, pal_pauline, pal_unknown, pal_unknown, pal_unknown,
-    pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown,
-    pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown,
-    pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown,
-    pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown,
-    pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown,
-    pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown,
-    pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown,
+    pal_paultop, pal_paulbot, pal_paulbot, pal_paulbot, pal_paulbot, pal_barrel,  pal_barrel,  pal_barrel,
+    pal_barrel,  pal_oilbarl, pal_oilbarl, pal_oilbarl, pal_unknown, pal_unknown, pal_dktop,   pal_dktop,
+    pal_dktop,   pal_dktop,   pal_dktop,   pal_dktop,   pal_dktop,   pal_dkbody,  pal_dkbody,  pal_dkbody,
+    pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody, 
+    pal_dktop,   pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody, 
+    pal_unknown, pal_unknown, pal_blkarea, pal_spring,  pal_spring,  pal_fire,    pal_fire,    pal_unknown,
+    pal_fire,    pal_fire,    pal_fire,    pal_fire,    pal_girder,  pal_unknown, pal_unknown, pal_unknown,
+    pal_unknown, pal_oilbarl, pal_unknown, pal_unknown, pal_unknown, pal_fire,    pal_fire,    pal_unknown,
     pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown,
     pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown,
     pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown,
