@@ -58,12 +58,18 @@ int main(int argc, char *argv[])
     SDL_WM_SetCaption("Kong DX", "Kong DX");
 
     std::cout << "Loading graphics..." << std::endl;
-    tiles = SDL_LoadBMP("tiles.bmp");
-    sprite_surfs[0] = SDL_LoadBMP("sprites.bmp");
-    SDL_SetColorKey(sprite_surfs[0], SDL_SRCCOLORKEY, 0);
-    sprite_surfs[1] = makeFlippedSprites(sprite_surfs[0], true, false);
-    sprite_surfs[2] = makeFlippedSprites(sprite_surfs[0], false, true);
-    sprite_surfs[3] = makeFlippedSprites(sprite_surfs[0], true, true);
+    SDL_Surface *tmp = SDL_LoadBMP("tiles.bmp");
+    tiles = SDL_ConvertSurface(tmp, screen->format, SDL_SWSURFACE);
+    SDL_FreeSurface(tmp);
+
+    tmp = SDL_LoadBMP("sprites.bmp");
+    SDL_SetColorKey(tmp, SDL_SRCCOLORKEY, 0);
+    sprite_surfs[1] = makeFlippedSprites(tmp, true, false);
+    sprite_surfs[2] = makeFlippedSprites(tmp, false, true);
+    sprite_surfs[3] = makeFlippedSprites(tmp, true, true);
+    // We have to do this last since makeFlippedSprites requires 24-bit color
+    sprite_surfs[0] = SDL_ConvertSurface(tmp, screen->format, SDL_SWSURFACE);
+    SDL_FreeSurface(tmp);
     std::cout << "Done loading graphics." << std::endl;
 
     z80_init();
@@ -287,7 +293,9 @@ SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip)
         dst_pixels[dst_idx+2] = src_pixels[src_idx+2];
     }
 
-    return surf;
+    SDL_Surface *conv_surf = SDL_ConvertSurface(surf, screen->format, SDL_SWSURFACE);
+    SDL_FreeSurface(surf);
+    return conv_surf;
 }
 
 
@@ -405,6 +413,7 @@ bool doFrame()
                     448, 512, 32,
                     fullscreen ? (SDL_FULLSCREEN | SDL_HWSURFACE) : SDL_SWSURFACE
                 );
+                SDL_ShowCursor(fullscreen ? SDL_DISABLE : SDL_ENABLE);
             }
             else if(evt.key.keysym.sym == SDLK_ESCAPE)
             {
