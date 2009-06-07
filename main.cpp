@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
     std::cout << "Done loading ROMs." << std::endl;
 
     SDL_Init(SDL_INIT_VIDEO);
-    screen = SDL_SetVideoMode(224, 256, 32, SDL_SWSURFACE);
+    screen = SDL_SetVideoMode(448, 512, 32, SDL_SWSURFACE);
     SDL_WM_SetCaption("Kong DX", "Kong DX");
 
     std::cout << "Loading graphics..." << std::endl;
@@ -134,21 +134,21 @@ void drawScreen()
     /*** Draw tiles ***/
     // These never change in the loop
     src.y = 0;
-    src.w = 8;
-    src.h = 8;
-    dest.w = 8;
-    dest.h = 8;
+    src.w = 16;
+    src.h = 16;
+    dest.w = 16;
+    dest.h = 16;
 
     for(int y = 0; y < 32; ++y)
     {
         for(int x = 0; x < 32; ++x)
         {
             int tile_id = VRAM[y*32+x];
-            src.x = tile_id*8;
+            src.x = tile_id*16;
 
             // Note that we're rotating the display 90 degrees here
-            dest.x = (29-y)*8;
-            dest.y = x*8;
+            dest.x = (29-y)*16;
+            dest.y = x*16;
  
             SDL_BlitSurface(tiles, &src, screen, &dest);
         }
@@ -157,10 +157,10 @@ void drawScreen()
     /*** Draw sprites ***/
     // These never change in the loop
     src.y = 0;
-    src.w = 16;
-    src.h = 16;
-    dest.w = 16;
-    dest.w = 16;
+    src.w = 32;
+    src.h = 32;
+    dest.w = 32;
+    dest.w = 32;
 
     for(int offset = 0x900; offset < 0xa80; offset += 4)
     {
@@ -179,10 +179,10 @@ void drawScreen()
             sprite_surf_idx |= 2;
         }
 
-        src.x = sprite_id*16;
+        src.x = sprite_id*32;
 
-        dest.x = RAM[offset] - 23;
-        dest.y = RAM[offset+3] - 8;
+        dest.x = (RAM[offset] - 23)*2;
+        dest.y = (RAM[offset+3] - 8)*2;
 
         SDL_BlitSurface(sprite_surfs[sprite_surf_idx], &src, screen, &dest);
     }
@@ -243,7 +243,7 @@ SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip)
 {
     SDL_Surface *surf = SDL_CreateRGBSurface(
         SDL_SWSURFACE,
-        2048, 16, 24,
+        4096, 32, 24,
         src->format->Rmask,
         src->format->Gmask,
         src->format->Bmask,
@@ -254,25 +254,25 @@ SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip)
     // Note: No locking necessary since we're working solely with software surfaces
     char *src_pixels = static_cast<char *>(src->pixels);
     char *dst_pixels = static_cast<char *>(surf->pixels);
-    for(int i = 0; i < 2048*16; ++i)
+    for(int i = 0; i < 4096*32; ++i)
     {
-        int sprite_num = (i % 2048)/16;
-        int sprite_x = i%16;
-        int sprite_y = i/2048;
+        int sprite_num = (i % 4096)/32;
+        int sprite_x = i%32;
+        int sprite_y = i/4096;
 
         if(hflip)
         {
-            sprite_x = 15 - sprite_x;
+            sprite_x = 31 - sprite_x;
         }
 
         if(vflip)
         {
-            sprite_y = 15 - sprite_y;
+            sprite_y = 31 - sprite_y;
         }
 
-        int src_x = sprite_num*16 + sprite_x;
+        int src_x = sprite_num*32 + sprite_x;
 
-        int src_idx = (sprite_y*2048+src_x)*3;
+        int src_idx = (sprite_y*4096+src_x)*3;
         int dst_idx = i*3;
 
         dst_pixels[dst_idx] = src_pixels[src_idx];
@@ -397,7 +397,7 @@ bool LoopZ80()
 
                 fullscreen = !fullscreen;
                 screen = SDL_SetVideoMode(
-                    224, 256, 32,
+                    448, 512, 32,
                     fullscreen ? (SDL_FULLSCREEN | SDL_HWSURFACE) : SDL_SWSURFACE
                 );
             }
@@ -419,7 +419,7 @@ bool LoopZ80()
 
     // @FIXME@ -- keep track of FPS
     // (or find better timing mechanism)
-    SDL_Delay(10);
+    //SDL_Delay(10);
 
     return true;
 }

@@ -54,7 +54,7 @@ def main(argv=None):
                 # Hence putting pixels at (7-y, x) instead of (x, y)
                 tile_img.putpixel((tile_num*8+(7-y), x), tiledata[offset+y*8+x])
 
-    tile_img.save("tiles.bmp")
+    tile_img.resize((4096, 16)).save("tiles.bmp")
 
 
     ### SPRITES ###
@@ -82,7 +82,7 @@ def main(argv=None):
                 spr_img.putpixel((tile_num*8+(7-y), x), top_spr_data[offset+y*8+x])
                 spr_img.putpixel((tile_num*8+(7-y), x+8), bottom_spr_data[offset+y*8+x])
 
-    spr_img.save("sprites.bmp")
+    spr_img.resize((4096, 32)).save("sprites.bmp")
 
 
 def decode(file_list):
