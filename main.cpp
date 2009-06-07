@@ -89,14 +89,6 @@ int main(int argc, char *argv[])
     if(SDL_NumJoysticks() > 0)
     {
         joy = SDL_JoystickOpen(0);
-        if(!joy)
-        {
-            std::cout << "Shit!" << std::endl;
-        }
-        else
-        {
-            std::cout << "w00t" << std::endl;
-        }
     }
 
     z80_init();
