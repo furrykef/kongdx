@@ -433,7 +433,7 @@ bool doFrame()
 
     // @FIXME@ -- keep track of FPS
     // (or find better timing mechanism)
-    //SDL_Delay(10);
+    SDL_Delay(10);
 
     return true;
 }
