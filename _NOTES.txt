@@ -3,7 +3,7 @@ TODO:
 * Too many global variables
 * Not enough modularity
 * No error checking (esp. checking to see if files aren't found or are wrong dimensions/bpp)
-* SDL_Init doesn't enable threading or whatever it is on non-Win32 systems
+* SDL_Init doesn't enable SDL_INIT_EVENTTHREAD on non-Win32 systems
 * Z80 code doesn't use stdint.h (or a replacement for it); simply assumes uint16 = unsigned short, etc.
 * Z80 code gives lots of warnings in VC++
 * Make SDL_mixer optional instead of required

@@ -40,12 +40,14 @@ int IN0, IN1, IN2, DSW1;
 SDL_Surface *screen;
 SDL_Surface *tiles;
 SDL_Surface *sprite_surfs[4];   // 0 = no flip, 1 = horizontal flip, etc.
-bool g_vblank;                  // Tracks if vblank interrupts enabled
+bool g_vblank_enabled;                  // Tracks if vblank interrupts enabled
 
 Mix_Music *dragnet;
 Mix_Music *howhigh;
 Mix_Music *death;
 Mix_Chunk *boom;
+
+SDL_Joystick *joy = NULL;
 
 const int CYCLES_PER_VBLANK = 3072000 / 60;     // Is this correct?
 const unsigned char DIP_FACTORY = 0x80;
@@ -59,7 +61,7 @@ int main(int argc, char *argv[])
     loadROMs();
     std::cout << "Done loading ROMs." << std::endl;
 
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
     screen = SDL_SetVideoMode(448, 512, 32, SDL_SWSURFACE);
     SDL_WM_SetCaption("Kong DX", "Kong DX");
 
@@ -84,6 +86,19 @@ int main(int argc, char *argv[])
     death = Mix_LoadMUS("sound/death.ogg");
     boom = Mix_LoadWAV("sound/boom.wav");
 
+    if(SDL_NumJoysticks() > 0)
+    {
+        joy = SDL_JoystickOpen(0);
+        if(!joy)
+        {
+            std::cout << "Shit!" << std::endl;
+        }
+        else
+        {
+            std::cout << "w00t" << std::endl;
+        }
+    }
+
     z80_init();
     z80_readbyte = readbyte;
     z80_writebyte = writebyte;
@@ -93,7 +108,7 @@ int main(int argc, char *argv[])
     resetGame();
     runZ80();
 
-    // @XXX@ - cleanup (uninitialize SDL, release surfaces, etc.)?
+    // @XXX@ - cleanup (release surfaces, joys, etc.)?
     Mix_CloseAudio();
     SDL_Quit();
     return 0;
@@ -109,7 +124,7 @@ void runZ80()
         if(cycle_count >= CYCLES_PER_VBLANK)
         {
             // Z80 has hit vblank
-            if(g_vblank)
+            if(g_vblank_enabled)
             {
                 z80_nmi();
             }
@@ -151,7 +166,7 @@ void resetGame()
     IN1 = 0;
     IN2 = 0;
     DSW1 = DIP_FACTORY;
-    g_vblank = false;
+    g_vblank_enabled = false;
     z80_reset();
 }
 
@@ -241,22 +256,20 @@ void handleInput()
         IN2 |= 8;
     }
 
-    if(keystate[SDLK_RIGHT])
+    if(keystate[SDLK_RIGHT] && !keystate[SDLK_LEFT])
     {
         IN0 |= 1;
     }
-
-    if(keystate[SDLK_LEFT])
+    else if(keystate[SDLK_LEFT] && !keystate[SDLK_RIGHT])
     {
         IN0 |= 2;
     }
 
-    if(keystate[SDLK_UP])
+    if(keystate[SDLK_UP] && !keystate[SDLK_DOWN])
     {
         IN0 |= 4;
     }
-
-    if(keystate[SDLK_DOWN])
+    else if(keystate[SDLK_DOWN] && !keystate[SDLK_UP])
     {
         IN0 |= 8;
     }
@@ -264,6 +277,35 @@ void handleInput()
     if(keystate[SDLK_LCTRL])
     {
         IN0 |= 0x10;
+    }
+
+    if(joy != NULL)
+    {
+        Sint16 x = SDL_JoystickGetAxis(joy, 0);
+        Sint16 y = SDL_JoystickGetAxis(joy, 1);
+
+        if(x > 8192)
+        {
+            IN0 |= 1;
+        }
+        else if(x < -8192)
+        {
+            IN0 |= 2;
+        }
+
+        if(y < -8192)
+        {
+            IN0 |= 4;
+        }
+        else if(y > 8192)
+        {
+            IN0 |= 8;
+        }
+
+        if(SDL_JoystickGetButton(joy, 0))
+        {
+            IN0 |= 0x10;
+        }
     }
 }
 
@@ -360,7 +402,7 @@ void writebyte(uint16 addr, uint8 value)
     }
     else if(addr == 0x7d84)
     {
-        g_vblank = (value != 0);
+        g_vblank_enabled = (value != 0);
     }
     else if(addr == 0x7d86 || addr == 0x7d87)
     {
