@@ -20,7 +20,7 @@
 #include "SDL.h"
 #include "z80/z80.h"
 
-void mainLoop();
+void runZ80();
 void loadROMs();
 void resetGame();
 void drawScreen();
@@ -30,7 +30,7 @@ void writebyte(uint16, uint8);
 uint8 readbyte(uint16);
 void writeport(uint16, uint8);
 uint8 readport(uint16);
-bool LoopZ80();
+bool doFrame();
 
 unsigned char ROM[0x4000];
 unsigned char RAM[0x1000];
@@ -42,6 +42,7 @@ SDL_Surface *sprite_surfs[4];   // 0 = no flip, 1 = horizontal flip, etc.
 bool g_vblank;                  // Tracks if vblank interrupts enabled
 
 const int CYCLES_PER_VBLANK = 3072000 / 60;     // Is this correct?
+const unsigned char DIP_FACTORY = 0x80;
 
 
 int main(int argc, char *argv[])
@@ -71,13 +72,13 @@ int main(int argc, char *argv[])
     z80_readport = readport;
     z80_writeport = writeport;
     resetGame();
-    mainLoop();
+    runZ80();
 
-    // @XXX@ - cleanup?
+    // @XXX@ - cleanup (uninitialize SDL, release surfaces, etc.)?
     return 0;
 }
 
-void mainLoop()
+void runZ80()
 {
     int cycle_count = 0;
     for(;;)
@@ -86,13 +87,19 @@ void mainLoop()
         ++cycle_count;
         if(cycle_count >= CYCLES_PER_VBLANK)
         {
-            // Time for vblank interrupt
-            // (SDL processing happens here too)
-            cycle_count -= CYCLES_PER_VBLANK;
-            if(!LoopZ80())
+            // Z80 has hit vblank
+            if(g_vblank)
+            {
+                z80_nmi();
+            }
+
+            // Handle events and draw
+            if(!doFrame())
             {
                 return;
             }
+
+            cycle_count -= CYCLES_PER_VBLANK;
         }
     }
 }
@@ -122,7 +129,7 @@ void resetGame()
     IN0 = 0;
     IN1 = 0;
     IN2 = 0;
-    DSW1 = 0x80;        // Factory setting
+    DSW1 = DIP_FACTORY;
     g_vblank = false;
     z80_reset();
 }
@@ -377,13 +384,11 @@ uint8 readport(uint16 port)
     return 0;
 }
 
-bool LoopZ80()
+// Return value:
+//  true = continue emulation
+//  false = exit program
+bool doFrame()
 {
-    if(g_vblank)
-    {
-        z80_nmi();
-    }
-
     // SDL events
     SDL_Event evt;
     while(SDL_PollEvent(&evt))

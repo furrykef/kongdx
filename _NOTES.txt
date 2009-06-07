@@ -5,3 +5,6 @@ TODO:
 * No error checking (esp. checking to see if files aren't found or are wrong dimensions/bpp)
 * SDL_Init doesn't enable threading or whatever it is on non-Win32 systems
 * Z80 code doesn't use stdint.h (or a replacement for it); simply assumes uint16 = unsigned short, etc.
+* Make SDL_mixer optional instead of required
+* Use OpenGL instead of SDL for video (higher performance)?
+* Use surface conversion in SDL (higher performance)?
