@@ -6,8 +6,12 @@ include(TestBigEndian)
 find_package(SDL REQUIRED)
 include_directories(${SDL_INCLUDE_DIR})
 
+find_package(SDL_mixer REQUIRED)
+include_directories(${SDLMIXER_INCLUDE_DIR})
+
 link_libraries(
    ${SDL_LIBRARY}
+   ${SDLMIXER_LIBRARY}
    SDLmain
 )
 

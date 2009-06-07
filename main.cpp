@@ -18,6 +18,7 @@
 #include <iostream>
 #include <fstream>
 #include "SDL.h"
+#include "SDL_mixer.h"
 #include "z80/z80.h"
 
 void runZ80();
@@ -41,6 +42,11 @@ SDL_Surface *tiles;
 SDL_Surface *sprite_surfs[4];   // 0 = no flip, 1 = horizontal flip, etc.
 bool g_vblank;                  // Tracks if vblank interrupts enabled
 
+Mix_Music *dragnet;
+Mix_Music *howhigh;
+Mix_Music *death;
+Mix_Chunk *boom;
+
 const int CYCLES_PER_VBLANK = 3072000 / 60;     // Is this correct?
 const unsigned char DIP_FACTORY = 0x80;
 
@@ -53,7 +59,7 @@ int main(int argc, char *argv[])
     loadROMs();
     std::cout << "Done loading ROMs." << std::endl;
 
-    SDL_Init(SDL_INIT_VIDEO);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
     screen = SDL_SetVideoMode(448, 512, 32, SDL_SWSURFACE);
     SDL_WM_SetCaption("Kong DX", "Kong DX");
 
@@ -72,15 +78,24 @@ int main(int argc, char *argv[])
     SDL_FreeSurface(tmp);
     std::cout << "Done loading graphics." << std::endl;
 
+    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024);
+    dragnet = Mix_LoadMUS("sound/dragnet.ogg");
+    howhigh = Mix_LoadMUS("sound/howhigh.ogg");
+    death = Mix_LoadMUS("sound/death.ogg");
+    boom = Mix_LoadWAV("sound/boom.wav");
+
     z80_init();
     z80_readbyte = readbyte;
     z80_writebyte = writebyte;
     z80_readport = readport;
     z80_writeport = writeport;
+
     resetGame();
     runZ80();
 
     // @XXX@ - cleanup (uninitialize SDL, release surfaces, etc.)?
+    Mix_CloseAudio();
+    SDL_Quit();
     return 0;
 }
 
@@ -311,13 +326,19 @@ void writebyte(uint16 addr, uint8 value)
     }
     else if(addr == 0x7c00)
     {
-        /*std::cout << "Music/sound effect: ";
+        std::cout << "Music/sound effect: ";
 
         switch(value)
         {
         case 0: std::cout << "null"; break;
-        case 1: std::cout << "Dragnet"; break;
-        case 2: std::cout << "How high can you get?"; break;
+        case 1:
+            std::cout << "Dragnet";
+            Mix_PlayMusic(dragnet, 1);
+            break;
+        case 2:
+            std::cout << "How high can you get?";
+            Mix_PlayMusic(howhigh, 1);
+            break;
         case 3: std::cout << "time running out"; break;
         case 4: std::cout << "Hammer Time"; break;
         case 5: std::cout << "rivet 2 complete"; break;
@@ -335,7 +356,7 @@ void writebyte(uint16 addr, uint8 value)
             std::cout << "invalid";
         }
 
-        std::cout << std::endl;*/
+        std::cout << std::endl;
     }
     else if(addr == 0x7d84)
     {
