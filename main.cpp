@@ -47,6 +47,7 @@ Mix_Music *mus_dragnet;
 Mix_Music *mus_howhigh;
 Mix_Music *mus_death;
 Mix_Music *mus_barrels;
+Mix_Music *mus_pies;
 Mix_Music *mus_springs;
 Mix_Music *mus_rivets;
 Mix_Music *mus_hammer;
@@ -90,6 +91,7 @@ int main(int argc, char *argv[])
     mus_howhigh = Mix_LoadMUS("sound/howhigh.ogg");
     mus_death = Mix_LoadMUS("sound/death.ogg");
     mus_barrels = Mix_LoadMUS("sound/barrels.ogg");
+    mus_pies = Mix_LoadMUS("sound/pies.ogg");
     mus_springs = Mix_LoadMUS("sound/springs.ogg");
     mus_rivets = Mix_LoadMUS("sound/rivets.ogg");
     mus_hammer = Mix_LoadMUS("sound/hammer.ogg");
@@ -417,6 +419,9 @@ void writebyte(uint16 addr, uint8 value)
             break;
           case 8:
             playMusic(mus_barrels, true);
+            break;
+          case 9:
+            playMusic(mus_pies, true);
             break;
           case 10:
             // Springs music
