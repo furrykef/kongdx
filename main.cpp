@@ -27,6 +27,7 @@ void resetGame();
 void drawScreen();
 void handleInput();
 SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip);
+void playMusic(Mix_Music *what, bool loop);
 void writebyte(uint16, uint8);
 uint8 readbyte(uint16);
 void writeport(uint16, uint8);
@@ -42,10 +43,14 @@ SDL_Surface *tiles;
 SDL_Surface *sprite_surfs[4];   // 0 = no flip, 1 = horizontal flip, etc.
 bool g_vblank_enabled;          // Tracks if vblank interrupts enabled
 
-Mix_Music *dragnet;
-Mix_Music *howhigh;
-Mix_Music *death;
-Mix_Chunk *boom;
+Mix_Music *mus_dragnet;
+Mix_Music *mus_howhigh;
+Mix_Music *mus_death;
+Mix_Music *mus_barrels;
+Mix_Music *mus_springs;
+Mix_Music *mus_rivets;
+Mix_Music *mus_hammer;
+Mix_Chunk *snd_boom;
 
 SDL_Joystick *joy = NULL;
 
@@ -81,10 +86,14 @@ int main(int argc, char *argv[])
     std::cout << "Done loading graphics." << std::endl;
 
     Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024);
-    dragnet = Mix_LoadMUS("sound/dragnet.ogg");
-    howhigh = Mix_LoadMUS("sound/howhigh.ogg");
-    death = Mix_LoadMUS("sound/death.ogg");
-    boom = Mix_LoadWAV("sound/boom.wav");
+    mus_dragnet = Mix_LoadMUS("sound/dragnet.ogg");
+    mus_howhigh = Mix_LoadMUS("sound/howhigh.ogg");
+    mus_death = Mix_LoadMUS("sound/death.ogg");
+    mus_barrels = Mix_LoadMUS("sound/barrels.ogg");
+    mus_springs = Mix_LoadMUS("sound/springs.ogg");
+    mus_rivets = Mix_LoadMUS("sound/rivets.ogg");
+    mus_hammer = Mix_LoadMUS("sound/hammer.ogg");
+    snd_boom = Mix_LoadWAV("sound/boom.wav");
 
     if(SDL_NumJoysticks() > 0)
     {
@@ -154,6 +163,7 @@ void loadROMs()
 
 void resetGame()
 {
+    playMusic(NULL, false);
     IN0 = 0;
     IN1 = 0;
     IN2 = 0;
@@ -347,6 +357,25 @@ SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip)
     return conv_surf;
 }
 
+// NULL = stop music
+void playMusic(Mix_Music *what, bool loop)
+{
+    static Mix_Music *prev_tune = NULL;
+
+    if(what != prev_tune)
+    {
+        if(what != NULL)
+        {
+            Mix_PlayMusic(what, loop ? -1 : 1);
+        }
+        else
+        {
+            Mix_HaltMusic();
+        }
+        prev_tune = what;
+    }
+}
+
 
 void writebyte(uint16 addr, uint8 value)
 {
@@ -360,37 +389,60 @@ void writebyte(uint16 addr, uint8 value)
     }
     else if(addr == 0x7c00)
     {
-        std::cout << "Music/sound effect: ";
-
         switch(value)
         {
-        case 0: std::cout << "null"; break;
-        case 1:
-            std::cout << "Dragnet";
-            Mix_PlayMusic(dragnet, 1);
+          case 0:
+            // Do nothing
             break;
-        case 2:
-            std::cout << "How high can you get?";
-            Mix_PlayMusic(howhigh, 1);
+          case 1:
+            playMusic(mus_dragnet, false);
             break;
-        case 3: std::cout << "time running out"; break;
-        case 4: std::cout << "Hammer Time"; break;
-        case 5: std::cout << "rivet 2 complete"; break;
-        case 6: std::cout << "hammer hit"; break;
-        case 7: std::cout << "screen complete"; break;
-        case 8: std::cout << "barrel music"; break;
-        case 9: std::cout << "unknown"; break;
-        case 10: std::cout << "springs music"; break;
-        case 11: std::cout << "rivet music"; break;
-        case 12: std::cout << "rivet 1 complete"; break;
-        case 13: std::cout << "score!"; break;
-        case 14: std::cout << "Kong's about to fall"; break;
-        case 15: std::cout << "roar"; break;
-        default:
-            std::cout << "invalid";
+          case 2:
+            playMusic(mus_howhigh, false);
+            break;
+          case 3:
+            // Time running out
+            break;
+          case 4:
+            playMusic(mus_hammer, true);
+            break;
+          case 5:
+            // Rivet 2 complete
+            break;
+          case 6:
+            // Hammer hit
+            break;
+          case 7:
+            // Screen complete
+            break;
+          case 8:
+            playMusic(mus_barrels, true);
+            break;
+          case 10:
+            // Springs music
+            // (Weird considering that the arcade machine didn't even
+            //  PLAY music on this stage)
+            playMusic(mus_springs, true);
+            break;
+          case 11:
+            // Rivets music
+            playMusic(mus_rivets, true);
+            break;
+          case 12:
+            // Rivet 1 complete
+            break;
+          case 13:
+            // Score!
+            break;
+          case 14:
+            // Kong's about to fall
+            break;
+          case 15:
+            // Roar!
+            break;
+          default:
+            std::cerr << "Unknown tune/sfx: " << int(value) << std::endl;
         }
-
-        std::cout << std::endl;
     }
     else if(addr == 0x7d84)
     {
@@ -469,6 +521,10 @@ bool doFrame()
                     fullscreen ? (SDL_FULLSCREEN | SDL_HWSURFACE) : SDL_SWSURFACE
                 );
                 SDL_ShowCursor(fullscreen ? SDL_DISABLE : SDL_ENABLE);
+            }
+            else if(evt.key.keysym.sym == SDLK_r)
+            {
+                resetGame();
             }
             else if(evt.key.keysym.sym == SDLK_ESCAPE)
             {
