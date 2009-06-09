@@ -433,7 +433,7 @@ void writebyte(uint16 addr, uint8 value)
             break;
           case 6:
             // Hammer hit
-            std::cout << "Hammer hit" << std::endl;
+            //std::cout << "Hammer hit" << std::endl;
             break;
           case 7:
             playMusic(mus_screencomplete, false);
