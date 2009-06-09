@@ -21,11 +21,12 @@ Building the source
 -------------------
 We use CMake: http://www.cmake.org/
 
-You will need SDL to build.
+You will need SDL and SDL_mixer to build.
 
 
 Misc. notes
 -----------
 A ton of credit goes to MAME. Although I didn't take any code from it,
 most of my knowledge of the Donkey Kong hardware comes directly from
-the MAME source.
+the MAME source. It's very unlikely I'd have been able to code this
+without such a reference.

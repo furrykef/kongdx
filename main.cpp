@@ -43,14 +43,19 @@ SDL_Surface *tiles;
 SDL_Surface *sprite_surfs[4];   // 0 = no flip, 1 = horizontal flip, etc.
 bool g_vblank_enabled;          // Tracks if vblank interrupts enabled
 
-Mix_Music *mus_dragnet;
+Mix_Music *mus_intro;
 Mix_Music *mus_howhigh;
 Mix_Music *mus_death;
 Mix_Music *mus_barrels;
 Mix_Music *mus_pies;
 Mix_Music *mus_springs;
 Mix_Music *mus_rivets;
+Mix_Music *mus_lowtime;
 Mix_Music *mus_hammer;
+Mix_Music *mus_screencomplete;
+Mix_Music *mus_rescue1;
+Mix_Music *mus_rescue2;
+Mix_Music *mus_kongfall;
 Mix_Chunk *snd_boom;
 
 SDL_Joystick *joy = NULL;
@@ -61,17 +66,19 @@ const unsigned char DIP_FACTORY = 0x80;
 
 int main(int argc, char *argv[])
 {
-    std::cout << "Welcome to Kong DX!" << std::endl;
-
-    std::cout << "Loading program ROMs..." << std::endl;
     loadROMs();
-    std::cout << "Done loading ROMs." << std::endl;
 
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
+    SDL_Init(
+        SDL_INIT_VIDEO
+        | SDL_INIT_AUDIO
+        | SDL_INIT_JOYSTICK
+#ifndef WIN32
+        | SDL_INIT_EVENTTHREAD
+#endif
+    );
     screen = SDL_SetVideoMode(448, 512, 32, SDL_SWSURFACE);
     SDL_WM_SetCaption("Kong DX", "Kong DX");
 
-    std::cout << "Loading graphics..." << std::endl;
     SDL_Surface *tmp = SDL_LoadBMP("tiles.bmp");
     tiles = SDL_ConvertSurface(tmp, screen->format, SDL_SWSURFACE);
     SDL_FreeSurface(tmp);
@@ -84,18 +91,22 @@ int main(int argc, char *argv[])
     // We have to do this last since makeFlippedSprites requires 24-bit color
     sprite_surfs[0] = SDL_ConvertSurface(tmp, screen->format, SDL_SWSURFACE);
     SDL_FreeSurface(tmp);
-    std::cout << "Done loading graphics." << std::endl;
 
     Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024);
-    mus_dragnet = Mix_LoadMUS("sound/dragnet.ogg");
-    mus_howhigh = Mix_LoadMUS("sound/howhigh.ogg");
-    mus_death = Mix_LoadMUS("sound/death.ogg");
-    mus_barrels = Mix_LoadMUS("sound/barrels.ogg");
-    mus_pies = Mix_LoadMUS("sound/pies.ogg");
-    mus_springs = Mix_LoadMUS("sound/springs.ogg");
-    mus_rivets = Mix_LoadMUS("sound/rivets.ogg");
-    mus_hammer = Mix_LoadMUS("sound/hammer.ogg");
-    snd_boom = Mix_LoadWAV("sound/boom.wav");
+    mus_intro = Mix_LoadMUS("sounds/dkong/intro.ogg");
+    mus_howhigh = Mix_LoadMUS("sounds/dkong/howhigh.ogg");
+    mus_death = Mix_LoadMUS("sounds/dkong/death.ogg");
+    mus_barrels = Mix_LoadMUS("sounds/dkong/barrels.ogg");
+    mus_pies = Mix_LoadMUS("sounds/dkong/pies.ogg");
+    mus_springs = Mix_LoadMUS("sounds/dkong/springs.ogg");
+    mus_rivets = Mix_LoadMUS("sounds/dkong/rivets.ogg");
+    mus_lowtime = Mix_LoadMUS("sounds/dkong/lowtime.ogg");
+    mus_hammer = Mix_LoadMUS("sounds/dkong/hammer.ogg");
+    mus_screencomplete = Mix_LoadMUS("sounds/dkong/screencomplete.ogg");
+    mus_rescue1 = Mix_LoadMUS("sounds/dkong/rescue1.ogg");
+    mus_rescue2 = Mix_LoadMUS("sounds/dkong/rescue2.ogg");
+    mus_kongfall = Mix_LoadMUS("sounds/dkong/kongfall.ogg");
+    snd_boom = Mix_LoadWAV("sounds/dkong/boom.wav");
 
     if(SDL_NumJoysticks() > 0)
     {
@@ -166,6 +177,7 @@ void loadROMs()
 void resetGame()
 {
     playMusic(NULL, false);
+    // @TODO@ - clear sound effects too
     IN0 = 0;
     IN1 = 0;
     IN2 = 0;
@@ -368,6 +380,13 @@ void playMusic(Mix_Music *what, bool loop)
     {
         if(what != NULL)
         {
+            // Crude hack: game keeps calling "low time" music even when
+            // Mario is already dead, so ignore in this case
+            if(prev_tune == mus_death && what == mus_lowtime)
+            {
+                return;
+            }
+
             Mix_PlayMusic(what, loop ? -1 : 1);
         }
         else
@@ -397,25 +416,27 @@ void writebyte(uint16 addr, uint8 value)
             // Do nothing
             break;
           case 1:
-            playMusic(mus_dragnet, false);
+            playMusic(mus_intro, false);
             break;
           case 2:
             playMusic(mus_howhigh, false);
             break;
           case 3:
-            // Time running out
+            playMusic(mus_lowtime, true);
             break;
           case 4:
             playMusic(mus_hammer, true);
             break;
           case 5:
             // Rivet 2 complete
+            playMusic(mus_rescue2, false);
             break;
           case 6:
             // Hammer hit
+            std::cout << "Hammer hit" << std::endl;
             break;
           case 7:
-            // Screen complete
+            playMusic(mus_screencomplete, false);
             break;
           case 8:
             playMusic(mus_barrels, true);
@@ -424,23 +445,22 @@ void writebyte(uint16 addr, uint8 value)
             playMusic(mus_pies, true);
             break;
           case 10:
-            // Springs music
-            // (Weird considering that the arcade machine didn't even
-            //  PLAY music on this stage)
             playMusic(mus_springs, true);
             break;
           case 11:
-            // Rivets music
             playMusic(mus_rivets, true);
             break;
           case 12:
             // Rivet 1 complete
+            playMusic(mus_rescue1, false);
             break;
           case 13:
-            // Score!
+            // Rivet removed
+            // I think we should ignore this one.
             break;
           case 14:
             // Kong's about to fall
+            playMusic(mus_kongfall, false);
             break;
           case 15:
             // Roar!
@@ -448,6 +468,10 @@ void writebyte(uint16 addr, uint8 value)
           default:
             std::cerr << "Unknown tune/sfx: " << int(value) << std::endl;
         }
+    }
+    else if(addr == 0x7d80 && value != 0)
+    {
+        playMusic(mus_death, false);
     }
     else if(addr == 0x7d84)
     {
