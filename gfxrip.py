@@ -13,29 +13,33 @@ ROMDIR = 'roms/dkong/'
 black = (0, 0, 0)
 fake_black = (0x01, 0, 0)       # Since true black = color key
 red = (0xff, 0, 0)
+darkblue = (0, 0, 0xb4)
 blue = (0, 0, 0xff)
 babyblue = (0xa4, 0xa5, 0xff)
 peach = (0xff, 0xc2, 0x62)
 orange = (0xff, 0x79, 0)
 lt_orange = (0xff, 0xc2, 0)
-brown = (0x9E, 0x0B, 0x0E)
-purple = (0xff, 0, 0xff)
+brown = (0xc5, 0, 0)
+tan = (0xe6, 0xa5, 0x62)
+purple = (0xff, 0x55, 0xb4)
 cyan = (0x00, 0xff, 0xff)
 white = (0xff, 0xff, 0xff)
 
-pal_unknown = [black,
-               (0x88, 0x88, 0x88),
-               (0xcc, 0xcc, 0xcc),
-               white]
+pal_grey = [black,
+            (0x88, 0x88, 0x88),
+            (0xcc, 0xcc, 0xcc),
+             white]
+
+pal_unknown = pal_grey
 
 pal_girder = [black,
               (0xFF, 0x2c, 0x62),
               (0xa4, 0, 0),
-              (0x00, 0xFB, 0xFF)]
+              cyan]
 
 pal_mario = [black, peach, red, blue]
 pal_paultop = [black, white, orange, purple]
-pal_paulbot = [black, blue, white, purple]
+pal_pauline = [black, darkblue, white, purple]
 pal_barrel = [black, blue, orange, peach]
 pal_dktop = [black, brown, peach, white]
 pal_dkbody = [black, brown, peach, orange]
@@ -43,8 +47,44 @@ pal_oilbarl = [black, white, cyan, blue]
 pal_fire = [black, lt_orange, red, white]
 pal_spring = [black, babyblue, cyan, red]
 pal_elevbox = [black, lt_orange, red, fake_black]
+pal_dktile = [black, orange, peach, white]
+pal_rivet = [black, blue, cyan, lt_orange]
+pal_pie = [black, tan, lt_orange, blue]
 
-tile_palettes = [pal_girder]*256
+tile_palettes = [
+    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,
+    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,
+    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,
+    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,
+    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,
+    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,
+    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,
+    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,
+    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,
+    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_unknown, pal_unknown, pal_unknown,
+    pal_dktile,  pal_dktile,  pal_dktile,  pal_dktile,  pal_dktile,  pal_dktile,  pal_dktile,  pal_dktile,
+    pal_dktile,  pal_dktile,  pal_dktile,  pal_dktile,  pal_dktile,  pal_dktile,  pal_dktile,  pal_dktile,
+    pal_dktile,  pal_dktile,  pal_dktile,  pal_dktile,  pal_dktile,  pal_dktile,  pal_dktile,  pal_dktile,
+    pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,
+    pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,
+    pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,
+    pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,
+    pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,
+    pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,
+    pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,
+    pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,
+    pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,
+    pal_rivet,   pal_dktile,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_rivet,
+    pal_rivet,   pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,
+    pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,
+    pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,
+    pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,
+    pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,
+    pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,
+    pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,
+    pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,
+    pal_girder,  pal_girder,  pal_girder,  pal_grey,    pal_girder,  pal_girder,  pal_grey,    pal_mario,
+]
 tile_palettes[255] = pal_mario
 
 tile_files = [
@@ -55,20 +95,20 @@ tile_files = [
 spr_palettes = [
     pal_mario,   pal_mario,   pal_mario,   pal_mario,   pal_mario,   pal_mario,   pal_mario,   pal_mario,
     pal_mario,   pal_mario,   pal_mario,   pal_mario,   pal_mario,   pal_mario,   pal_mario,   pal_mario,
-    pal_paultop, pal_paulbot, pal_paulbot, pal_paulbot, pal_paulbot, pal_barrel,  pal_barrel,  pal_barrel,
+    pal_paultop, pal_pauline, pal_pauline, pal_pauline, pal_pauline, pal_barrel,  pal_barrel,  pal_barrel,
     pal_barrel,  pal_oilbarl, pal_oilbarl, pal_oilbarl, pal_unknown, pal_unknown, pal_dktop,   pal_dktop,
     pal_dktop,   pal_dktop,   pal_dktop,   pal_dktop,   pal_dktop,   pal_dkbody,  pal_dkbody,  pal_dkbody,
-    pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody, 
-    pal_dktop,   pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody, 
-    pal_unknown, pal_unknown, pal_elevbox, pal_spring,  pal_spring,  pal_fire,    pal_fire,    pal_unknown,
-    pal_fire,    pal_fire,    pal_fire,    pal_fire,    pal_girder,  pal_elevbox, pal_unknown, pal_unknown,
-    pal_unknown, pal_oilbarl, pal_unknown, pal_unknown, pal_unknown, pal_fire,    pal_fire,    pal_unknown,
+    pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,
+    pal_dktop,   pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,  pal_dkbody,
+    pal_unknown, pal_elevbox, pal_elevbox, pal_spring,  pal_spring,  pal_fire,    pal_fire,    pal_unknown,
+    pal_fire,    pal_fire,    pal_fire,    pal_fire,    pal_girder,  pal_elevbox, pal_grey,    pal_unknown,
+    pal_unknown, pal_oilbarl, pal_unknown, pal_pie,     pal_pie,     pal_fire,    pal_fire,    pal_unknown,
+    pal_spring,  pal_spring,  pal_spring,  pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown,
     pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown,
+    pal_oilbarl, pal_oilbarl, pal_oilbarl, pal_oilbarl, pal_unknown, pal_unknown, pal_unknown, pal_unknown,
     pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown,
-    pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown,
-    pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown,
-    pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown,
-    pal_mario,   pal_mario,   pal_mario,   pal_unknown, pal_unknown, pal_unknown, pal_unknown, pal_unknown,
+    pal_unknown, pal_unknown, pal_oilbarl, pal_pauline, pal_pauline, pal_pauline, pal_pauline, pal_pauline,
+    pal_mario,   pal_mario,   pal_mario,   pal_grey,    pal_grey,    pal_grey,    pal_grey,    pal_grey,
 ]
 
 top_spr_files = [
