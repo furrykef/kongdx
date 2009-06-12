@@ -10,3 +10,8 @@ TODO:
 * We don't reload graphics when toggling fullscreen (fullscreen mode may have different pixel format)
 * Improper speed throttling
 * Game assumes you're launching it from CWD (especially unlikely to be true on Unix)
+* dkongjp has a different gfx ROM from dkong. What is the difference?
+* CRC check ROMs
+* Integrate functionality of gfxrip.py into emulator
+* Allow ripping graphics from e.g. Japanese ROM
+* Donkey Kong Junior? Mario Bros.?

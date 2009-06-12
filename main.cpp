@@ -22,7 +22,7 @@
 #include "z80/z80.h"
 
 void runZ80();
-void loadROMs();
+void loadROMs(const char *romset);
 void resetGame();
 void drawScreen();
 void handleInput();
@@ -66,7 +66,18 @@ const unsigned char DIP_FACTORY = 0x80;
 
 int main(int argc, char *argv[])
 {
-    loadROMs();
+    const char *romset;
+
+    if(argc > 1)
+    {
+        romset = argv[1];
+    }
+    else
+    {
+        romset = "dkong";
+    }
+
+    loadROMs(romset);
 
     SDL_Init(
         SDL_INIT_VIDEO
@@ -154,23 +165,46 @@ void runZ80()
     }
 }
 
-void loadROMs()
+void loadROMs(const char *romset)
 {
+    if(strcmp(romset, "dkong") == 0)
     {
-        std::ifstream rom_file("roms/dkong/c_5et_g.bin", std::ifstream::in | std::ifstream::binary);
-        rom_file.read(reinterpret_cast<char *>(ROM), 0x1000);
+        {
+            std::ifstream rom_file("roms/dkong/c_5et_g.bin", std::ifstream::in | std::ifstream::binary);
+            rom_file.read(reinterpret_cast<char *>(ROM), 0x1000);
+        }
+        {
+            std::ifstream rom_file("roms/dkong/c_5ct_g.bin", std::ifstream::in | std::ifstream::binary);
+            rom_file.read(reinterpret_cast<char *>(&ROM[0x1000]), 0x1000);
+        }
+        {
+            std::ifstream rom_file("roms/dkong/c_5bt_g.bin", std::ifstream::in | std::ifstream::binary);
+            rom_file.read(reinterpret_cast<char *>(&ROM[0x2000]), 0x1000);
+        }
+        {
+            std::ifstream rom_file("roms/dkong/c_5at_g.bin", std::ifstream::in | std::ifstream::binary);
+            rom_file.read(reinterpret_cast<char *>(&ROM[0x3000]), 0x1000);
+        }
     }
+    else
     {
-        std::ifstream rom_file("roms/dkong/c_5ct_g.bin", std::ifstream::in | std::ifstream::binary);
-        rom_file.read(reinterpret_cast<char *>(&ROM[0x1000]), 0x1000);
-    }
-    {
-        std::ifstream rom_file("roms/dkong/c_5bt_g.bin", std::ifstream::in | std::ifstream::binary);
-        rom_file.read(reinterpret_cast<char *>(&ROM[0x2000]), 0x1000);
-    }
-    {
-        std::ifstream rom_file("roms/dkong/c_5at_g.bin", std::ifstream::in | std::ifstream::binary);
-        rom_file.read(reinterpret_cast<char *>(&ROM[0x3000]), 0x1000);
+        // Assume dkongjp for now
+        {
+            std::ifstream rom_file("roms/dkongjp/c_5f_b.bin", std::ifstream::in | std::ifstream::binary);
+            rom_file.read(reinterpret_cast<char *>(ROM), 0x1000);
+        }
+        {
+            std::ifstream rom_file("roms/dkongjp/5g.cpu", std::ifstream::in | std::ifstream::binary);
+            rom_file.read(reinterpret_cast<char *>(&ROM[0x1000]), 0x1000);
+        }
+        {
+            std::ifstream rom_file("roms/dkongjp/5h.cpu", std::ifstream::in | std::ifstream::binary);
+            rom_file.read(reinterpret_cast<char *>(&ROM[0x2000]), 0x1000);
+        }
+        {
+            std::ifstream rom_file("roms/dkongjp/c_5k_b.bin", std::ifstream::in | std::ifstream::binary);
+            rom_file.read(reinterpret_cast<char *>(&ROM[0x3000]), 0x1000);
+        }
     }
 }
 
