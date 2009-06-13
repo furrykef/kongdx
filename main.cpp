@@ -26,6 +26,16 @@ const int SCREEN_HEIGHT = 512;
 const int SCREEN_BPP = 32;
 const int AUDIO_BUF_SIZE = 4096;
 
+enum SOUND_ID
+{
+    SND_BOOM,
+    SND_HAMMERHIT,
+    SND_JUMP,
+    SND_SPRING,
+    SND_FALL,
+    SND_SCORE
+};
+
 void runZ80();
 void loadROMs(const char *romset);
 void resetGame();
@@ -33,6 +43,7 @@ void drawScreen();
 void handleInput();
 SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip);
 void playMusic(Mix_Music *what, bool loop);
+void playSound(SOUND_ID id, Mix_Chunk *what);
 void writebyte(uint16, uint8);
 uint8 readbyte(uint16);
 void writeport(uint16, uint8);
@@ -450,6 +461,14 @@ void playMusic(Mix_Music *what, bool loop)
     }
 }
 
+void playSound(SOUND_ID id, Mix_Chunk *what)
+{
+    if(!Mix_Playing(id))
+    {
+        Mix_PlayChannel(id, what, 0);
+    }
+}
+
 
 void writebyte(uint16 addr, uint8 value)
 {
@@ -486,7 +505,7 @@ void writebyte(uint16 addr, uint8 value)
             break;
           case 6:
             // Hammer hit
-            Mix_PlayChannel(-1, snd_hammerhit, 0);
+            playSound(SND_HAMMERHIT, snd_hammerhit);
             break;
           case 7:
             playMusic(mus_screencomplete, false);
@@ -509,7 +528,7 @@ void writebyte(uint16 addr, uint8 value)
             break;
           case 13:
             // Rivet removed
-            Mix_PlayChannel(-1, snd_score, 0);
+            playSound(SND_SCORE, snd_score);
             break;
           case 14:
             // Kong's about to fall
@@ -528,23 +547,23 @@ void writebyte(uint16 addr, uint8 value)
     }
     else if(addr == 0x7d01 && value != 0)
     {
-        Mix_PlayChannel(-1, snd_jump, 0);
+        playSound(SND_JUMP, snd_jump);
     }
     else if(addr == 0x7d02 && value != 0)
     {
-        Mix_PlayChannel(-1, snd_boom, 0);
+        playSound(SND_BOOM, snd_boom);
     }
     else if(addr == 0x7d03 && value != 0)
     {
-        Mix_PlayChannel(-1, snd_spring, 0);
+        playSound(SND_SPRING, snd_spring);
     }
     else if(addr == 0x7d04 && value != 0)
     {
-        Mix_PlayChannel(-1, snd_fall, 0);
+        playSound(SND_FALL, snd_fall);
     }
     else if(addr == 0x7d05 && value != 0)
     {
-        Mix_PlayChannel(-1, snd_score, 0);
+        playSound(SND_SCORE, snd_score);
     }
     else if(addr == 0x7d80 && value != 0)
     {
