@@ -21,6 +21,11 @@
 #include "SDL_mixer.h"
 #include "z80/z80.h"
 
+const int SCREEN_WIDTH = 448;
+const int SCREEN_HEIGHT = 512;
+const int SCREEN_BPP = 32;
+const int AUDIO_BUF_SIZE = 4096;
+
 void runZ80();
 void loadROMs(const char *romset);
 void resetGame();
@@ -43,6 +48,7 @@ SDL_Surface *tiles;
 SDL_Surface *sprite_surfs[4];   // 0 = no flip, 1 = horizontal flip, etc.
 bool g_vblank_enabled;          // Tracks if vblank interrupts enabled
 
+
 Mix_Music *mus_intro;
 Mix_Music *mus_howhigh;
 Mix_Music *mus_death;
@@ -57,10 +63,18 @@ Mix_Music *mus_rescue1;
 Mix_Music *mus_rescue2;
 Mix_Music *mus_kongfall;
 Mix_Chunk *snd_boom;
+Mix_Chunk *snd_hammerhit;
+Mix_Chunk *snd_jump;
+Mix_Chunk *snd_spring;
+Mix_Chunk *snd_fall;
+Mix_Chunk *snd_score;
 
 SDL_Joystick *joy = NULL;
 
-const int CYCLES_PER_VBLANK = 3072000 / 60;     // Is this correct?
+// 3.072 MHz divided by 60 frames per second.
+// (@TODO@ - Is this the correct way to calculate this?)
+const int CYCLES_PER_VBLANK = 3072000 / 60;
+
 const unsigned char DIP_FACTORY = 0x80;
 
 
@@ -87,7 +101,7 @@ int main(int argc, char *argv[])
         | SDL_INIT_EVENTTHREAD
 #endif
     );
-    screen = SDL_SetVideoMode(448, 512, 32, SDL_SWSURFACE);
+    screen = SDL_SetVideoMode(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_BPP, SDL_SWSURFACE);
     SDL_WM_SetCaption("Kong DX", "Kong DX");
 
     SDL_Surface *tmp = SDL_LoadBMP("tiles.bmp");
@@ -103,7 +117,7 @@ int main(int argc, char *argv[])
     sprite_surfs[0] = SDL_ConvertSurface(tmp, screen->format, SDL_SWSURFACE);
     SDL_FreeSurface(tmp);
 
-    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024);
+    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, AUDIO_BUF_SIZE);
     mus_intro = Mix_LoadMUS("sounds/dkong/intro.ogg");
     mus_howhigh = Mix_LoadMUS("sounds/dkong/howhigh.ogg");
     mus_death = Mix_LoadMUS("sounds/dkong/death.ogg");
@@ -118,6 +132,11 @@ int main(int argc, char *argv[])
     mus_rescue2 = Mix_LoadMUS("sounds/dkong/rescue2.ogg");
     mus_kongfall = Mix_LoadMUS("sounds/dkong/kongfall.ogg");
     snd_boom = Mix_LoadWAV("sounds/dkong/boom.wav");
+    snd_hammerhit = Mix_LoadWAV("sounds/dkong/hammerhit.wav");
+    snd_jump = Mix_LoadWAV("sounds/dkong/jump.wav");
+    snd_spring = Mix_LoadWAV("sounds/dkong/spring.wav");
+    snd_fall = Mix_LoadWAV("sounds/dkong/fall.wav");
+    snd_score = Mix_LoadWAV("sounds/dkong/score.wav");
 
     if(SDL_NumJoysticks() > 0)
     {
@@ -467,7 +486,7 @@ void writebyte(uint16 addr, uint8 value)
             break;
           case 6:
             // Hammer hit
-            //std::cout << "Hammer hit" << std::endl;
+            Mix_PlayChannel(-1, snd_hammerhit, 0);
             break;
           case 7:
             playMusic(mus_screencomplete, false);
@@ -490,7 +509,7 @@ void writebyte(uint16 addr, uint8 value)
             break;
           case 13:
             // Rivet removed
-            // I think we should ignore this one.
+            Mix_PlayChannel(-1, snd_score, 0);
             break;
           case 14:
             // Kong's about to fall
@@ -502,6 +521,30 @@ void writebyte(uint16 addr, uint8 value)
           default:
             std::cerr << "Unknown tune/sfx: " << int(value) << std::endl;
         }
+    }
+    else if(addr == 0x7d00 && value != 0)
+    {
+        // Walk noise
+    }
+    else if(addr == 0x7d01 && value != 0)
+    {
+        Mix_PlayChannel(-1, snd_jump, 0);
+    }
+    else if(addr == 0x7d02 && value != 0)
+    {
+        Mix_PlayChannel(-1, snd_boom, 0);
+    }
+    else if(addr == 0x7d03 && value != 0)
+    {
+        Mix_PlayChannel(-1, snd_spring, 0);
+    }
+    else if(addr == 0x7d04 && value != 0)
+    {
+        Mix_PlayChannel(-1, snd_fall, 0);
+    }
+    else if(addr == 0x7d05 && value != 0)
+    {
+        Mix_PlayChannel(-1, snd_score, 0);
     }
     else if(addr == 0x7d80 && value != 0)
     {
@@ -580,7 +623,7 @@ bool doFrame()
 
                 fullscreen = !fullscreen;
                 screen = SDL_SetVideoMode(
-                    448, 512, 32,
+                    SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_BPP,
                     fullscreen ? (SDL_FULLSCREEN | SDL_HWSURFACE) : SDL_SWSURFACE
                 );
                 SDL_ShowCursor(fullscreen ? SDL_DISABLE : SDL_ENABLE);
