@@ -92,8 +92,8 @@ extern uint64 z80_tstates, last_z80_tstates;
 
 extern void (*z80_writebyte)(uint16, uint8);
 extern uint8 (*z80_readbyte)(uint16);
-extern void (*z80_writeport)(uint16, uint8);
-extern uint8 (*z80_readport)(uint16);
+//extern void (*z80_writeport)(uint16, uint8);
+//extern uint8 (*z80_readport)(uint16);
 
 // Ok, I lied, not a macro!
 
@@ -108,7 +108,7 @@ static INLINE void Z80_WB_MACRO(uint16 A, uint8 V)
 static INLINE void Z80_WP_MACRO(uint16 A, uint8 V)
 { 
  z80_tstates += 4; 
- z80_writeport(A, V); 
+// z80_writeport(A, V); 
 }
 
 // Read mem
@@ -122,7 +122,8 @@ static INLINE uint8 Z80_RB_MACRO(uint16 A)
 static INLINE uint8 Z80_RP_MACRO(uint16 A)
 {
  z80_tstates += 4;
- return(z80_readport(A));
+ //return(z80_readport(A));
+ return 0;
 }
 
 

@@ -1,5 +1,5 @@
 TODO:
-* Virtually everything :)
+* Z80 core GPL compliance (note changes and date of change)
 * Too many global variables
 * Not enough modularity?
 * No error checking (esp. checking to see if files aren't found or are wrong dimensions/bpp)
@@ -9,9 +9,14 @@ TODO:
 * Use OpenGL instead of SDL for video (higher performance)?
 * We don't reload graphics when toggling fullscreen (fullscreen mode may have different pixel format)
 * Improper speed throttling
+* Improper method of playing SFX (doesn't allow overlapping sounds of the same type, so will occasionally drop samples)
 * Game assumes you're launching it from CWD (especially unlikely to be true on Unix)
 * dkongjp has a different gfx ROM from dkong. What is the difference?
 * CRC check ROMs
 * Integrate functionality of gfxrip.py into emulator
 * Allow ripping graphics from e.g. Japanese ROM
 * Donkey Kong Junior? Mario Bros.?
+* Does WIN32 get #define'd on MinGW? What about Cygwin?
+* Surface conversion disabled for now (since we're using wx and haven't set it up again yet)
+* LoadWAV can load OGGs, so use it for sound effects
+* Is SDL_INIT_VIDEO necessary (when not fullscreen)? Game runs without it, but...

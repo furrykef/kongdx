@@ -1,4 +1,5 @@
 /*
+    Kong DX - an enhanced Donkey Kong emulator
     Copyright 2009 Kef Schecter
 
     This program is free software; you can redistribute it and/or modify
@@ -17,15 +18,69 @@
 */
 #include <iostream>
 #include <fstream>
+#include <wx/wx.h>
+#include <wx/dcbuffer.h>
 #include "SDL.h"
 #include "SDL_mixer.h"
 #include "z80/z80.h"
 
-const int SCREEN_WIDTH = 448;
-const int SCREEN_HEIGHT = 512;
+const int TILE_SIZE = 16;
+const int SPRITE_SIZE = TILE_SIZE*2;
+const int SCREEN_WIDTH = TILE_SIZE*28;
+const int SCREEN_HEIGHT = TILE_SIZE*32;
 const int SCREEN_BPP = 32;
 const int AUDIO_BUF_SIZE = 4096;
+const int JOY_THRESHOLD = 8192;
 
+
+// A lot of the wx code is based on this tutorial:
+// http://code.technoplaza.net/wx-sdl/part1/
+class MyFrame;
+class SDLPanel;
+
+class MyApp : public wxApp
+{
+  public:
+    bool OnInit();
+    int OnRun();
+    int OnExit();
+
+  private:
+    MyFrame *m_frame;
+};
+
+class MyFrame : public wxFrame
+{
+  public:
+    MyFrame(const wxString &title);
+    void OnQuit(wxCommandEvent &WXUNUSED(evt));
+    SDLPanel &getPanel() { return *m_panel; }
+    //DECLARE_EVENT_TABLE()
+
+  private:
+    SDLPanel *m_panel;
+};
+
+class SDLPanel : public wxPanel
+{
+  public:
+    SDLPanel(wxWindow *parent);
+    ~SDLPanel();
+    DECLARE_EVENT_TABLE()
+
+  private:
+    void onPaint(wxPaintEvent &event);
+    void onEraseBackground(wxEraseEvent &event) {}
+    void onIdle(wxIdleEvent &event);
+    void createScreen();
+
+    SDL_Surface *m_screen;
+};
+
+
+
+// Note: should be 8 or less of these
+// (or else we need to allocate more SDL_mixer channels)
 enum SOUND_ID
 {
     SND_BOOM,
@@ -38,23 +93,21 @@ enum SOUND_ID
 
 void runZ80();
 void loadROMs(const char *romset);
+void loadROM(const char *filename, std::size_t where, std::size_t size);
 void resetGame();
-void drawScreen();
+void drawScreen(SDL_Surface *screen);
 void handleInput();
 SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip);
 void playMusic(Mix_Music *what, bool loop);
 void playSound(SOUND_ID id, Mix_Chunk *what);
 void writebyte(uint16, uint8);
 uint8 readbyte(uint16);
-void writeport(uint16, uint8);
-uint8 readport(uint16);
 bool doFrame();
 
 unsigned char ROM[0x4000];
 unsigned char RAM[0x1000];
 unsigned char VRAM[0x400];
 int IN0, IN1, IN2, DSW1;
-SDL_Surface *screen;
 SDL_Surface *tiles;
 SDL_Surface *sprite_surfs[4];   // 0 = no flip, 1 = horizontal flip, etc.
 bool g_vblank_enabled;          // Tracks if vblank interrupts enabled
@@ -89,44 +142,38 @@ const int CYCLES_PER_VBLANK = 3072000 / 60;
 const unsigned char DIP_FACTORY = 0x80;
 
 
-int main(int argc, char *argv[])
+bool MyApp::OnInit()
 {
-    const char *romset;
+    m_frame = new MyFrame("Kong DX");
+    m_frame->SetClientSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+    m_frame->Centre();
+    m_frame->Show();
 
-    if(argc > 1)
-    {
-        romset = argv[1];
-    }
-    else
-    {
-        romset = "dkong";
-    }
+    // @TODO@ - is this necessary?
+    SetTopWindow(m_frame);
 
-    loadROMs(romset);
+    return true;
+}
 
-    SDL_Init(
-        SDL_INIT_VIDEO
-        | SDL_INIT_AUDIO
-        | SDL_INIT_JOYSTICK
-#ifndef WIN32
-        | SDL_INIT_EVENTTHREAD
-#endif
-    );
-    screen = SDL_SetVideoMode(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_BPP, SDL_SWSURFACE);
-    SDL_WM_SetCaption("Kong DX", "Kong DX");
+int MyApp::OnRun()
+{
+    // @TODO@ - choose romset via argv, config file, whatever
+    loadROMs("dkong");
 
-    SDL_Surface *tmp = SDL_LoadBMP("tiles.bmp");
+    /*SDL_Surface *tmp = SDL_LoadBMP("tiles.bmp");
     tiles = SDL_ConvertSurface(tmp, screen->format, SDL_SWSURFACE);
-    SDL_FreeSurface(tmp);
+    SDL_FreeSurface(tmp);*/
+    tiles = SDL_LoadBMP("tiles.bmp");
 
-    tmp = SDL_LoadBMP("sprites.bmp");
+    SDL_Surface *tmp = SDL_LoadBMP("sprites.bmp");
     SDL_SetColorKey(tmp, SDL_SRCCOLORKEY, 0);
     sprite_surfs[1] = makeFlippedSprites(tmp, true, false);
     sprite_surfs[2] = makeFlippedSprites(tmp, false, true);
     sprite_surfs[3] = makeFlippedSprites(tmp, true, true);
     // We have to do this last since makeFlippedSprites requires 24-bit color
-    sprite_surfs[0] = SDL_ConvertSurface(tmp, screen->format, SDL_SWSURFACE);
-    SDL_FreeSurface(tmp);
+    //sprite_surfs[0] = SDL_ConvertSurface(tmp, screen->format, SDL_SWSURFACE);
+    //SDL_FreeSurface(tmp);
+    sprite_surfs[0] = tmp;
 
     Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, AUDIO_BUF_SIZE);
     mus_intro = Mix_LoadMUS("sounds/dkong/intro.ogg");
@@ -157,91 +204,175 @@ int main(int argc, char *argv[])
     z80_init();
     z80_readbyte = readbyte;
     z80_writebyte = writebyte;
-    z80_readport = readport;
-    z80_writeport = writeport;
 
     resetGame();
-    runZ80();
 
-    // @XXX@ - cleanup (release surfaces, joys, etc.)?
+    // Generate an initial idle event to start things
+    wxIdleEvent event;
+    event.SetEventObject(&m_frame->getPanel());
+    m_frame->getPanel().AddPendingEvent(event);
+
+    // Start the main loop
+    return wxApp::OnRun();
+}
+
+int MyApp::OnExit()
+{
     Mix_CloseAudio();
     SDL_Quit();
-    return 0;
+    std::cout << "Bye bye." << std::endl;
+    return wxApp::OnExit();
 }
 
-void runZ80()
+
+MyFrame::MyFrame(const wxString &title)
+  : wxFrame(NULL, -1, title)
 {
-    int cycle_count = 0;
-    for(;;)
+    m_panel = new SDLPanel(this);
+}
+
+void MyFrame::OnQuit(wxCommandEvent &WXUNUSED(evt))
+{
+    Close(true);
+}
+
+
+BEGIN_EVENT_TABLE(SDLPanel, wxPanel)
+    EVT_PAINT(SDLPanel::onPaint)
+    EVT_ERASE_BACKGROUND(SDLPanel::onEraseBackground)
+    EVT_IDLE(SDLPanel::onIdle)
+END_EVENT_TABLE()
+
+SDLPanel::SDLPanel(wxWindow *parent)
+    : wxPanel(parent, -1),
+      m_screen(NULL)
+{
+    // Ensure the size of the wxPanel
+    wxSize size(SCREEN_WIDTH, SCREEN_HEIGHT);
+    SetMinSize(size);
+    SetMaxSize(size);
+}
+
+SDLPanel::~SDLPanel()
+{
+    if(m_screen != NULL)
     {
-        z80_do_opcode();
-        ++cycle_count;
-        if(cycle_count >= CYCLES_PER_VBLANK)
-        {
-            // Z80 has hit vblank
-            if(g_vblank_enabled)
-            {
-                z80_nmi();
-            }
-
-            // Handle events and draw
-            if(!doFrame())
-            {
-                return;
-            }
-
-            cycle_count -= CYCLES_PER_VBLANK;
-        }
+        SDL_FreeSurface(m_screen);
     }
 }
+
+void SDLPanel::onPaint(wxPaintEvent &)
+{
+    // Can't draw if the screen doesn't exist yet
+    if(m_screen == NULL)
+    {
+        return;
+    }
+
+    // Lock the surface if necessary
+    if(SDL_MUSTLOCK(m_screen))
+    {
+        if(SDL_LockSurface(m_screen) < 0) {
+            return;
+        }
+    }
+
+    // Create a bitmap from our pixel data
+    // (@TODO@ - Is it inefficient to do this every frame?)
+    wxBitmap bmp(wxImage(m_screen->w, m_screen->h,
+                 static_cast<unsigned char *>(m_screen->pixels), true));
+
+    // Unlock the screen
+    if(SDL_MUSTLOCK(m_screen))
+    {
+        SDL_UnlockSurface(m_screen);
+    }
+
+    // Paint the screen
+    wxBufferedPaintDC dc(this, bmp);
+}
+
+void SDLPanel::onIdle(wxIdleEvent &)
+{
+    // Emulate a frame's worth of the machine
+    for(int cycle = 0; cycle < CYCLES_PER_VBLANK; ++cycle)
+    {
+        z80_do_opcode();
+    }
+
+    if(g_vblank_enabled)
+    {
+        z80_nmi();
+    }
+
+    doFrame();
+
+    // Create the SDL_Surface if necessary
+    createScreen();
+
+    if(SDL_MUSTLOCK(m_screen))
+    {
+        if(SDL_LockSurface(m_screen) < 0)
+        {
+            return;
+        }
+    }
+
+    drawScreen(m_screen);
+
+    if(SDL_MUSTLOCK(m_screen))
+    {
+        SDL_UnlockSurface(m_screen);
+    }
+
+    // Force a paint event to redraw the screen
+    Refresh(false);
+}
+
+
+void SDLPanel::createScreen()
+{
+    if(m_screen == NULL)
+    {
+        // @TODO@ -- bpp other than 24?
+        // (Renders very horribly if we just use SCREEN_BPP here)
+        m_screen = SDL_CreateRGBSurface(SDL_SWSURFACE, SCREEN_WIDTH,
+                                        SCREEN_HEIGHT, 24,
+                                        0, 0, 0, 0);     
+    }
+}
+
 
 void loadROMs(const char *romset)
 {
     if(strcmp(romset, "dkong") == 0)
     {
-        {
-            std::ifstream rom_file("roms/dkong/c_5et_g.bin", std::ifstream::in | std::ifstream::binary);
-            rom_file.read(reinterpret_cast<char *>(ROM), 0x1000);
-        }
-        {
-            std::ifstream rom_file("roms/dkong/c_5ct_g.bin", std::ifstream::in | std::ifstream::binary);
-            rom_file.read(reinterpret_cast<char *>(&ROM[0x1000]), 0x1000);
-        }
-        {
-            std::ifstream rom_file("roms/dkong/c_5bt_g.bin", std::ifstream::in | std::ifstream::binary);
-            rom_file.read(reinterpret_cast<char *>(&ROM[0x2000]), 0x1000);
-        }
-        {
-            std::ifstream rom_file("roms/dkong/c_5at_g.bin", std::ifstream::in | std::ifstream::binary);
-            rom_file.read(reinterpret_cast<char *>(&ROM[0x3000]), 0x1000);
-        }
+        loadROM("roms/dkong/c_5et_g.bin", 0, 0x1000);
+        loadROM("roms/dkong/c_5ct_g.bin", 0x1000, 0x1000);
+        loadROM("roms/dkong/c_5bt_g.bin", 0x2000, 0x1000);
+        loadROM("roms/dkong/c_5at_g.bin", 0x3000, 0x1000);
     }
     else
     {
         // Assume dkongjp for now
-        {
-            std::ifstream rom_file("roms/dkongjp/c_5f_b.bin", std::ifstream::in | std::ifstream::binary);
-            rom_file.read(reinterpret_cast<char *>(ROM), 0x1000);
-        }
-        {
-            std::ifstream rom_file("roms/dkongjp/5g.cpu", std::ifstream::in | std::ifstream::binary);
-            rom_file.read(reinterpret_cast<char *>(&ROM[0x1000]), 0x1000);
-        }
-        {
-            std::ifstream rom_file("roms/dkongjp/5h.cpu", std::ifstream::in | std::ifstream::binary);
-            rom_file.read(reinterpret_cast<char *>(&ROM[0x2000]), 0x1000);
-        }
-        {
-            std::ifstream rom_file("roms/dkongjp/c_5k_b.bin", std::ifstream::in | std::ifstream::binary);
-            rom_file.read(reinterpret_cast<char *>(&ROM[0x3000]), 0x1000);
-        }
+        loadROM("roms/dkongjp/c_5f_b.bin", 0, 0x1000);
+        loadROM("roms/dkongjp/5g.cpu", 0x1000, 0x1000);
+        loadROM("roms/dkongjp/5h.cpu", 0x2000, 0x1000);
+        loadROM("roms/dkongjp/c_5k_b.bin", 0x3000, 0x1000);
     }
+}
+
+// @XXX@ -- no error checking
+void loadROM(const char *filename, std::size_t where, std::size_t size)
+{
+    std::ifstream rom_file(filename, std::ifstream::in | std::ifstream::binary);
+    rom_file.read(reinterpret_cast<char *>(&ROM[where]), size);
 }
 
 void resetGame()
 {
     playMusic(NULL, false);
-    // @TODO@ - clear sound effects too
+    Mix_HaltChannel(-1);                // Stop sound effects
     IN0 = 0;
     IN1 = 0;
     IN2 = 0;
@@ -250,7 +381,7 @@ void resetGame()
     z80_reset();
 }
 
-void drawScreen()
+void drawScreen(SDL_Surface *screen)
 {
     SDL_Rect src, dest;
 
@@ -272,7 +403,7 @@ void drawScreen()
             // Note that we're rotating the display 90 degrees here
             dest.x = (29-y)*16;
             dest.y = x*16;
- 
+
             SDL_BlitSurface(tiles, &src, screen, &dest);
         }
     }
@@ -309,6 +440,8 @@ void drawScreen()
 
         SDL_BlitSurface(sprite_surfs[sprite_surf_idx], &src, screen, &dest);
     }
+
+    //SDL_Flip(screen);
 }
 
 void handleInput()
@@ -364,20 +497,20 @@ void handleInput()
         Sint16 x = SDL_JoystickGetAxis(joy, 0);
         Sint16 y = SDL_JoystickGetAxis(joy, 1);
 
-        if(x > 8192)
+        if(x > JOY_THRESHOLD)
         {
             IN0 |= 1;
         }
-        else if(x < -8192)
+        else if(x < -JOY_THRESHOLD)
         {
             IN0 |= 2;
         }
 
-        if(y < -8192)
+        if(y < -JOY_THRESHOLD)
         {
             IN0 |= 4;
         }
-        else if(y > 8192)
+        else if(y > JOY_THRESHOLD)
         {
             IN0 |= 8;
         }
@@ -430,9 +563,10 @@ SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip)
         dst_pixels[dst_idx+2] = src_pixels[src_idx+2];
     }
 
-    SDL_Surface *conv_surf = SDL_ConvertSurface(surf, screen->format, SDL_SWSURFACE);
+    /*SDL_Surface *conv_surf = SDL_ConvertSurface(surf, screen->format, SDL_SWSURFACE);
     SDL_FreeSurface(surf);
-    return conv_surf;
+    return conv_surf;*/
+    return surf;
 }
 
 // NULL = stop music
@@ -613,23 +747,13 @@ uint8 readbyte(uint16 addr)
     return 0;
 }
 
-void writeport(uint16 port, uint8 value)
-{
-    // Not used
-}
-
-uint8 readport(uint16 port)
-{
-    // Not used
-    return 0;
-}
-
 // Return value:
 //  true = continue emulation
 //  false = exit program
 bool doFrame()
 {
     // SDL events
+#if 0
     SDL_Event evt;
     while(SDL_PollEvent(&evt))
     {
@@ -638,16 +762,19 @@ bool doFrame()
           case SDL_KEYDOWN:
             if(evt.key.keysym.sym == SDLK_RETURN && (evt.key.keysym.mod & KMOD_ALT))
             {
-                static bool fullscreen = false;
+                // Disabled until we figure out how to make this work with wx
+                // @FIXME@ - reload graphics when going to fullscreen
+                // (to reconvert them to screen's native format)
+                /* static bool fullscreen = false;
 
                 fullscreen = !fullscreen;
                 screen = SDL_SetVideoMode(
                     SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_BPP,
                     fullscreen ? (SDL_FULLSCREEN | SDL_HWSURFACE) : SDL_SWSURFACE
                 );
-                SDL_ShowCursor(fullscreen ? SDL_DISABLE : SDL_ENABLE);
+                SDL_ShowCursor(fullscreen ? SDL_DISABLE : SDL_ENABLE); */
             }
-            else if(evt.key.keysym.sym == SDLK_r)
+            else if(evt.key.keysym.sym == SDLK_r && (evt.key.keysym.mod & KMOD_SHIFT))
             {
                 resetGame();
             }
@@ -661,15 +788,40 @@ bool doFrame()
             return false;
         }
     }
+#endif
 
     handleInput();
-
-    drawScreen();
-    SDL_Flip(screen);
 
     // @FIXME@ -- keep track of FPS
     // (or find better timing mechanism)
     SDL_Delay(10);
 
     return true;
+}
+
+
+// SDL needs an explicit main, despite using wxWidgets
+IMPLEMENT_APP_NO_MAIN(MyApp);
+int main(int argc, char *argv[])
+{
+    // SDL_Init *has* to be called outside the wxApp
+    // or else it won't work!
+    // @TODO@ - message box instead of cerr?
+    if(SDL_Init(SDL_INIT_VIDEO
+                | SDL_INIT_AUDIO
+                | SDL_INIT_JOYSTICK
+#ifndef WIN32
+                | SDL_INIT_EVENTTHREAD
+#endif
+                ) < 0)
+    {
+        std::cerr << "Unable to init SDL: " << SDL_GetError() << std::endl;
+        return 1;
+    }
+
+    // @TODO@ - Is this the right way to do it?
+    // This page says not to do it this way:
+    // http://wiki.wxwidgets.org/Wx_In_Non-Wx_Applications
+    // ...but it doesn't really provide a reason.
+    return wxEntry(argc, argv);
 }
