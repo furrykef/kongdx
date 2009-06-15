@@ -9,7 +9,7 @@ include_directories(${SDL_INCLUDE_DIR})
 find_package(SDL_mixer REQUIRED)
 include_directories(${SDLMIXER_INCLUDE_DIR})
 
-find_package(wxWidgets REQUIRED base core)
+find_package(wxWidgets REQUIRED base core gl)
 include(${wxWidgets_USE_FILE})
 
 link_libraries(

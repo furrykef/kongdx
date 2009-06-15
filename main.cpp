@@ -16,10 +16,23 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 49 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
+#include <wx/wxprec.h>
+
+#ifdef __BORLANDC__
+#pragma hdrstop
+#endif
+
+#ifndef WX_PRECOMP
+#include <wx/wx.h>
+#endif
+
+#if !wxUSE_GLCANVAS
+#error "OpenGL required: set wxUSE_GLCANVAS to 1 and rebuild wxWidgets"
+#endif
+
 #include <iostream>
 #include <fstream>
-#include <wx/wx.h>
-#include <wx/dcbuffer.h>
+#include <wx/glcanvas.h>
 #include "SDL.h"
 #include "SDL_mixer.h"
 #include "z80/z80.h"
@@ -36,7 +49,7 @@ const int JOY_THRESHOLD = 8192;
 // A lot of the wx code is based on this tutorial:
 // http://code.technoplaza.net/wx-sdl/part1/
 class MyFrame;
-class SDLPanel;
+class MyGLCanvas;
 
 class MyApp : public wxApp
 {
@@ -54,27 +67,29 @@ class MyFrame : public wxFrame
   public:
     MyFrame(const wxString &title);
     void OnQuit(wxCommandEvent &WXUNUSED(evt));
-    SDLPanel &getPanel() { return *m_panel; }
-    //DECLARE_EVENT_TABLE()
+    void makeOGLContext()
+    {
+        if(m_context == NULL)
+        {
+            // @TODO@ -- does this need to be delete'd?
+            m_context = new wxGLContext(m_canvas);
+            m_canvas->SetCurrent(m_context);
+        }
+    }
 
   private:
-    SDLPanel *m_panel;
+    MyGLCanvas *m_canvas;
+    wxGLContext *m_context;
 };
 
-class SDLPanel : public wxPanel
+class MyGLCanvas : public wxGLCanvas
 {
   public:
-    SDLPanel(wxWindow *parent);
-    ~SDLPanel();
+    MyGLCanvas(wxWindow *parent);
     DECLARE_EVENT_TABLE()
 
   private:
-    void onPaint(wxPaintEvent &event);
-    void onEraseBackground(wxEraseEvent &event) {}
     void onIdle(wxIdleEvent &event);
-    void createScreen();
-
-    SDL_Surface *m_screen;
 };
 
 
@@ -95,9 +110,8 @@ void runZ80();
 void loadROMs(const char *romset);
 void loadROM(const char *filename, std::size_t where, std::size_t size);
 void resetGame();
-void drawScreen(SDL_Surface *screen);
+void drawScreen();
 void handleInput();
-SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip);
 void playMusic(Mix_Music *what, bool loop);
 void playSound(SOUND_ID id, Mix_Chunk *what);
 void writebyte(uint16, uint8);
@@ -148,6 +162,7 @@ bool MyApp::OnInit()
     m_frame->SetClientSize(SCREEN_WIDTH, SCREEN_HEIGHT);
     m_frame->Centre();
     m_frame->Show();
+    m_frame->MakeOGLContext();
 
     // @TODO@ - is this necessary?
     SetTopWindow(m_frame);
@@ -226,9 +241,10 @@ int MyApp::OnExit()
 
 
 MyFrame::MyFrame(const wxString &title)
-  : wxFrame(NULL, -1, title)
+  : wxFrame(NULL, -1, title),
+    m_context(NULL)
 {
-    m_panel = new SDLPanel(this);
+    m_canvas = new MyGLCanvas(this);
 }
 
 void MyFrame::OnQuit(wxCommandEvent &WXUNUSED(evt))
@@ -237,15 +253,14 @@ void MyFrame::OnQuit(wxCommandEvent &WXUNUSED(evt))
 }
 
 
-BEGIN_EVENT_TABLE(SDLPanel, wxPanel)
-    EVT_PAINT(SDLPanel::onPaint)
-    EVT_ERASE_BACKGROUND(SDLPanel::onEraseBackground)
-    EVT_IDLE(SDLPanel::onIdle)
+BEGIN_EVENT_TABLE(MyGLCanvas, wxPanel)
+    EVT_PAINT(MyGLCanvas::onPaint)
+    EVT_ERASE_BACKGROUND(MyGLCanvas::onEraseBackground)
+    EVT_IDLE(MyGLCanvas::onIdle)
 END_EVENT_TABLE()
 
-SDLPanel::SDLPanel(wxWindow *parent)
-    : wxPanel(parent, -1),
-      m_screen(NULL)
+MyGLCanvas::MyGLCanvas(wxWindow *parent)
+    : wxPanel(parent, -1)
 {
     // Ensure the size of the wxPanel
     wxSize size(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -253,46 +268,7 @@ SDLPanel::SDLPanel(wxWindow *parent)
     SetMaxSize(size);
 }
 
-SDLPanel::~SDLPanel()
-{
-    if(m_screen != NULL)
-    {
-        SDL_FreeSurface(m_screen);
-    }
-}
-
-void SDLPanel::onPaint(wxPaintEvent &)
-{
-    // Can't draw if the screen doesn't exist yet
-    if(m_screen == NULL)
-    {
-        return;
-    }
-
-    // Lock the surface if necessary
-    if(SDL_MUSTLOCK(m_screen))
-    {
-        if(SDL_LockSurface(m_screen) < 0) {
-            return;
-        }
-    }
-
-    // Create a bitmap from our pixel data
-    // (@TODO@ - Is it inefficient to do this every frame?)
-    wxBitmap bmp(wxImage(m_screen->w, m_screen->h,
-                 static_cast<unsigned char *>(m_screen->pixels), true));
-
-    // Unlock the screen
-    if(SDL_MUSTLOCK(m_screen))
-    {
-        SDL_UnlockSurface(m_screen);
-    }
-
-    // Paint the screen
-    wxBufferedPaintDC dc(this, bmp);
-}
-
-void SDLPanel::onIdle(wxIdleEvent &)
+void MyGLCanvas::onIdle(wxIdleEvent &)
 {
     // Emulate a frame's worth of the machine
     for(int cycle = 0; cycle < CYCLES_PER_VBLANK; ++cycle)
@@ -306,31 +282,12 @@ void SDLPanel::onIdle(wxIdleEvent &)
     }
 
     doFrame();
-
-    // Create the SDL_Surface if necessary
-    createScreen();
-
-    if(SDL_MUSTLOCK(m_screen))
-    {
-        if(SDL_LockSurface(m_screen) < 0)
-        {
-            return;
-        }
-    }
-
-    drawScreen(m_screen);
-
-    if(SDL_MUSTLOCK(m_screen))
-    {
-        SDL_UnlockSurface(m_screen);
-    }
-
-    // Force a paint event to redraw the screen
-    Refresh(false);
+    drawScreen();
+    SwapBuffers();
 }
 
 
-void SDLPanel::createScreen()
+void MyGLCanvas::createScreen()
 {
     if(m_screen == NULL)
     {
@@ -381,7 +338,7 @@ void resetGame()
     z80_reset();
 }
 
-void drawScreen(SDL_Surface *screen)
+void drawScreen()
 {
     SDL_Rect src, dest;
 
@@ -520,53 +477,6 @@ void handleInput()
             IN0 |= 0x10;
         }
     }
-}
-
-SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip)
-{
-    SDL_Surface *surf = SDL_CreateRGBSurface(
-        SDL_SWSURFACE,
-        4096, 32, 24,
-        src->format->Rmask,
-        src->format->Gmask,
-        src->format->Bmask,
-        0
-    );
-    SDL_SetColorKey(surf, SDL_SRCCOLORKEY, 0);
-
-    // Note: No locking necessary since we're working solely with software surfaces
-    char *src_pixels = static_cast<char *>(src->pixels);
-    char *dst_pixels = static_cast<char *>(surf->pixels);
-    for(int i = 0; i < 4096*32; ++i)
-    {
-        int sprite_num = (i % 4096)/32;
-        int sprite_x = i%32;
-        int sprite_y = i/4096;
-
-        if(hflip)
-        {
-            sprite_x = 31 - sprite_x;
-        }
-
-        if(vflip)
-        {
-            sprite_y = 31 - sprite_y;
-        }
-
-        int src_x = sprite_num*32 + sprite_x;
-
-        int src_idx = (sprite_y*4096+src_x)*3;
-        int dst_idx = i*3;
-
-        dst_pixels[dst_idx] = src_pixels[src_idx];
-        dst_pixels[dst_idx+1] = src_pixels[src_idx+1];
-        dst_pixels[dst_idx+2] = src_pixels[src_idx+2];
-    }
-
-    /*SDL_Surface *conv_surf = SDL_ConvertSurface(surf, screen->format, SDL_SWSURFACE);
-    SDL_FreeSurface(surf);
-    return conv_surf;*/
-    return surf;
 }
 
 // NULL = stop music

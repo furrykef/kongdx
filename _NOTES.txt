@@ -1,5 +1,7 @@
 TODO:
 * Z80 core GPL compliance (note changes and date of change)
+** Just use SVN tags?
+** Use a changelog?
 * Too many global variables
 * Not enough modularity?
 * No error checking (esp. checking to see if files aren't found or are wrong dimensions/bpp)
@@ -20,3 +22,10 @@ TODO:
 * Surface conversion disabled for now (since we're using wx and haven't set it up again yet)
 * LoadWAV can load OGGs, so use it for sound effects
 * Is SDL_INIT_VIDEO necessary (when not fullscreen)? Game runs without it, but...
+* g_frame_count % 3 hack for sound effects (*if* it's true that they always play exactly three times)
+* Icon for window?
+
+
+OpenGL:
+* A 4096x64 texture is a bit silly, isn't it? How about 512x512?
+* Display lists?
