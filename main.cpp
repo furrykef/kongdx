@@ -24,26 +24,17 @@
 const int SCREEN_WIDTH = 448;
 const int SCREEN_HEIGHT = 512;
 const int SCREEN_BPP = 32;
-const int AUDIO_BUF_SIZE = 4096;
-
-enum SOUND_ID
-{
-    SND_BOOM,
-    SND_HAMMERHIT,
-    SND_JUMP,
-    SND_SPRING,
-    SND_FALL,
-    SND_SCORE
-};
+const int AUDIO_BUF_SIZE = 4096;    // @TODO@ -- what value to use?
 
 void runZ80();
 void loadROMs(const char *romset);
+void loadROM(const char *filename, std::size_t where, std::size_t size);
 void resetGame();
 void drawScreen();
 void handleInput();
 SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip);
 void playMusic(Mix_Music *what, bool loop);
-void playSound(SOUND_ID id, Mix_Chunk *what);
+void playSound(Mix_Chunk *what);
 void writebyte(uint16, uint8);
 uint8 readbyte(uint16);
 void writeport(uint16, uint8);
@@ -58,6 +49,7 @@ SDL_Surface *screen;
 SDL_Surface *tiles;
 SDL_Surface *sprite_surfs[4];   // 0 = no flip, 1 = horizontal flip, etc.
 bool g_vblank_enabled;          // Tracks if vblank interrupts enabled
+int g_frame_count = 0;
 
 
 Mix_Music *mus_intro;
@@ -142,12 +134,12 @@ int main(int argc, char *argv[])
     mus_rescue1 = Mix_LoadMUS("sounds/dkong/rescue1.ogg");
     mus_rescue2 = Mix_LoadMUS("sounds/dkong/rescue2.ogg");
     mus_kongfall = Mix_LoadMUS("sounds/dkong/kongfall.ogg");
-    snd_boom = Mix_LoadWAV("sounds/dkong/boom.wav");
-    snd_hammerhit = Mix_LoadWAV("sounds/dkong/hammerhit.wav");
-    snd_jump = Mix_LoadWAV("sounds/dkong/jump.wav");
-    snd_spring = Mix_LoadWAV("sounds/dkong/spring.wav");
-    snd_fall = Mix_LoadWAV("sounds/dkong/fall.wav");
-    snd_score = Mix_LoadWAV("sounds/dkong/score.wav");
+    snd_boom = Mix_LoadWAV("sounds/dkong/boom.ogg");
+    snd_hammerhit = Mix_LoadWAV("sounds/dkong/hammerhit.ogg");
+    snd_jump = Mix_LoadWAV("sounds/dkong/jump.ogg");
+    snd_spring = Mix_LoadWAV("sounds/dkong/spring.ogg");
+    snd_fall = Mix_LoadWAV("sounds/dkong/fall.ogg");
+    snd_score = Mix_LoadWAV("sounds/dkong/score.ogg");
 
     if(SDL_NumJoysticks() > 0)
     {
@@ -199,44 +191,28 @@ void loadROMs(const char *romset)
 {
     if(strcmp(romset, "dkong") == 0)
     {
-        {
-            std::ifstream rom_file("roms/dkong/c_5et_g.bin", std::ifstream::in | std::ifstream::binary);
-            rom_file.read(reinterpret_cast<char *>(ROM), 0x1000);
-        }
-        {
-            std::ifstream rom_file("roms/dkong/c_5ct_g.bin", std::ifstream::in | std::ifstream::binary);
-            rom_file.read(reinterpret_cast<char *>(&ROM[0x1000]), 0x1000);
-        }
-        {
-            std::ifstream rom_file("roms/dkong/c_5bt_g.bin", std::ifstream::in | std::ifstream::binary);
-            rom_file.read(reinterpret_cast<char *>(&ROM[0x2000]), 0x1000);
-        }
-        {
-            std::ifstream rom_file("roms/dkong/c_5at_g.bin", std::ifstream::in | std::ifstream::binary);
-            rom_file.read(reinterpret_cast<char *>(&ROM[0x3000]), 0x1000);
-        }
+        loadROM("roms/dkong/c_5et_g.bin", 0, 0x1000);
+        loadROM("roms/dkong/c_5ct_g.bin", 0x1000, 0x1000);
+        loadROM("roms/dkong/c_5bt_g.bin", 0x2000, 0x1000);
+        loadROM("roms/dkong/c_5at_g.bin", 0x3000, 0x1000);
     }
     else
     {
         // Assume dkongjp for now
-        {
-            std::ifstream rom_file("roms/dkongjp/c_5f_b.bin", std::ifstream::in | std::ifstream::binary);
-            rom_file.read(reinterpret_cast<char *>(ROM), 0x1000);
-        }
-        {
-            std::ifstream rom_file("roms/dkongjp/5g.cpu", std::ifstream::in | std::ifstream::binary);
-            rom_file.read(reinterpret_cast<char *>(&ROM[0x1000]), 0x1000);
-        }
-        {
-            std::ifstream rom_file("roms/dkongjp/5h.cpu", std::ifstream::in | std::ifstream::binary);
-            rom_file.read(reinterpret_cast<char *>(&ROM[0x2000]), 0x1000);
-        }
-        {
-            std::ifstream rom_file("roms/dkongjp/c_5k_b.bin", std::ifstream::in | std::ifstream::binary);
-            rom_file.read(reinterpret_cast<char *>(&ROM[0x3000]), 0x1000);
-        }
+        loadROM("roms/dkongjp/c_5f_b.bin", 0, 0x1000);
+        loadROM("roms/dkongjp/5g.cpu", 0x1000, 0x1000);
+        loadROM("roms/dkongjp/5h.cpu", 0x2000, 0x1000);
+        loadROM("roms/dkongjp/c_5k_b.bin", 0x3000, 0x1000);
     }
 }
+
+// @XXX@ -- no error checking
+void loadROM(const char *filename, std::size_t where, std::size_t size)
+{
+    std::ifstream rom_file(filename, std::ifstream::in | std::ifstream::binary);
+    rom_file.read(reinterpret_cast<char *>(&ROM[where]), size);
+}
+
 
 void resetGame()
 {
@@ -461,11 +437,14 @@ void playMusic(Mix_Music *what, bool loop)
     }
 }
 
-void playSound(SOUND_ID id, Mix_Chunk *what)
+void playSound(Mix_Chunk *what)
 {
-    if(!Mix_Playing(id))
+    // When the game plays a sound effect, it always plays it
+    // three frames in a row. Hence, we only play every third
+    // frame (i.e., mod 3).
+    if(g_frame_count % 3 == 0)
     {
-        Mix_PlayChannel(id, what, 0);
+        Mix_PlayChannel(-1, what, 0);
     }
 }
 
@@ -505,7 +484,7 @@ void writebyte(uint16 addr, uint8 value)
             break;
           case 6:
             // Hammer hit
-            playSound(SND_HAMMERHIT, snd_hammerhit);
+            playSound(snd_hammerhit);
             break;
           case 7:
             playMusic(mus_screencomplete, false);
@@ -528,7 +507,7 @@ void writebyte(uint16 addr, uint8 value)
             break;
           case 13:
             // Rivet removed
-            playSound(SND_SCORE, snd_score);
+            playSound(snd_score);
             break;
           case 14:
             // Kong's about to fall
@@ -547,23 +526,23 @@ void writebyte(uint16 addr, uint8 value)
     }
     else if(addr == 0x7d01 && value != 0)
     {
-        playSound(SND_JUMP, snd_jump);
+        playSound(snd_jump);
     }
     else if(addr == 0x7d02 && value != 0)
     {
-        playSound(SND_BOOM, snd_boom);
+        playSound(snd_boom);
     }
     else if(addr == 0x7d03 && value != 0)
     {
-        playSound(SND_SPRING, snd_spring);
+        playSound(snd_spring);
     }
     else if(addr == 0x7d04 && value != 0)
     {
-        playSound(SND_FALL, snd_fall);
+        playSound(snd_fall);
     }
     else if(addr == 0x7d05 && value != 0)
     {
-        playSound(SND_SCORE, snd_score);
+        playSound(snd_score);
     }
     else if(addr == 0x7d80 && value != 0)
     {
@@ -670,6 +649,6 @@ bool doFrame()
     // @FIXME@ -- keep track of FPS
     // (or find better timing mechanism)
     SDL_Delay(10);
-
+    ++g_frame_count;
     return true;
 }
