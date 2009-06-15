@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 2.6)
-project(kongdx)
+cmake_minimum_required (VERSION 2.6)
+project (KONGDX)
 
 include(TestBigEndian)
 
@@ -9,20 +9,17 @@ include_directories(${SDL_INCLUDE_DIR})
 find_package(SDL_mixer REQUIRED)
 include_directories(${SDLMIXER_INCLUDE_DIR})
 
-find_package(wxWidgets REQUIRED base core)
-include(${wxWidgets_USE_FILE})
-
 link_libraries(
    ${SDL_LIBRARY}
    ${SDLMIXER_LIBRARY}
-   ${wxWidgets_LIBRARIES}
+   SDLmain
 )
 
 
 add_executable(kongdx main.cpp z80/z80.cpp z80/z80_ops.cpp)
 
 
-# Needed for Z80 emulator
+# Needed for Z80 code
 test_big_endian(BIG_ENDIAN)
 if(BIG_ENDIAN)
   set(ENDIAN_FLAG "MSB_FIRST")
