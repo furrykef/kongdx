@@ -1,17 +1,20 @@
 TODO:
-* Virtually everything :)
+* Z80 core GPL compliance (note changes and date of change)
 * Too many global variables
 * Not enough modularity?
 * No error checking (esp. checking to see if files aren't found or are wrong dimensions/bpp)
-* Z80 code doesn't use stdint.h (or a replacement for it); simply assumes uint16 = unsigned short, etc.
 * Z80 code gives lots of warnings in VC++
 * Make SDL_mixer optional instead of required
 * Use OpenGL instead of SDL for video (higher performance)?
 * We don't reload graphics when toggling fullscreen (fullscreen mode may have different pixel format)
 * Improper speed throttling
+* Improper method of playing SFX (doesn't allow overlapping sounds of the same type, so will occasionally drop samples)
 * Game assumes you're launching it from CWD (especially unlikely to be true on Unix)
 * dkongjp has a different gfx ROM from dkong. What is the difference?
 * CRC check ROMs
 * Integrate functionality of gfxrip.py into emulator
 * Allow ripping graphics from e.g. Japanese ROM
 * Donkey Kong Junior? Mario Bros.?
+* Does WIN32 get #define'd on MinGW? What about Cygwin?
+* LoadWAV can load OGGs, so use it for sound effects
+* g_frame_count % 3 hack for sound effects (*if* it's true that they always play exactly three times)

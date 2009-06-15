@@ -27,20 +27,21 @@
 #ifndef FUSE_Z80_H
 #define FUSE_Z80_H
 
-// Hack for use with KongDX
-// @XXX@ -- should use boost/cstdint.hpp or something
-typedef char int8;
-typedef unsigned char uint8;
-typedef unsigned short uint16;
-typedef int int32;
-typedef unsigned int uint32;
-typedef unsigned long long uint64;
+// Hacks for use with KongDX
+#include "SDL_stdinc.h"
+#include "SDL_endian.h"
+typedef Sint8 int8;
+typedef Uint8 uint8;
+typedef Uint16 uint16;
+typedef Sint32 int32;
+typedef Uint32 uint32;
+typedef Uint64 uint64;
 #define INLINE inline
 
 
 /* Union allowing a register pair to be accessed as bytes or as a word */
 typedef union {
-#ifdef MSB_FIRST
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
   struct { uint8 h,l; } b;
 #else
   struct { uint8 l,h; } b;
