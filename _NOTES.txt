@@ -16,5 +16,6 @@ TODO:
 * Allow ripping graphics from e.g. Japanese ROM
 * Donkey Kong Junior? Mario Bros.?
 * Does WIN32 get #define'd on MinGW? What about Cygwin?
-* LoadWAV can load OGGs, so use it for sound effects
-* g_frame_count % 3 hack for sound effects (*if* it's true that they always play exactly three times)
+* Picking up hammer spams "score" sound for 67 frames -- what to do? May be best to analyze how the original hardware worked...
+* Are the sparks circling DK's head when he falls supposed to be dark orange or bright orange?
+* Game occasionally (but rarely) crashes on exit (by clicking X in corner)
