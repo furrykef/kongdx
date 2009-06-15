@@ -15,6 +15,8 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 49 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
+#include <algorithm>
+#include <cassert>
 #include <iostream>
 #include <fstream>
 #include "SDL.h"
@@ -26,6 +28,20 @@ const int SCREEN_HEIGHT = 512;
 const int SCREEN_BPP = 32;
 const int AUDIO_BUF_SIZE = 4096;    // @TODO@ -- what value to use?
 
+enum SOUND_ID
+{
+    SND_BOOM,
+    SND_HAMMERHIT,
+    SND_JUMP,
+    SND_SPRING,
+    SND_FALL,
+    SND_SCORE,
+    SND_RIVET,
+    NUM_SOUNDS
+};
+
+bool g_sound_regs[NUM_SOUNDS];
+
 void runZ80();
 void loadROMs(const char *romset);
 void loadROM(const char *filename, std::size_t where, std::size_t size);
@@ -34,7 +50,7 @@ void drawScreen();
 void handleInput();
 SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip);
 void playMusic(Mix_Music *what, bool loop);
-void playSound(Mix_Chunk *what);
+void playSound(Mix_Chunk *what, SOUND_ID snd_reg, int value);
 void writebyte(uint16, uint8);
 uint8 readbyte(uint16);
 void writeport(uint16, uint8);
@@ -49,7 +65,6 @@ SDL_Surface *screen;
 SDL_Surface *tiles;
 SDL_Surface *sprite_surfs[4];   // 0 = no flip, 1 = horizontal flip, etc.
 bool g_vblank_enabled;          // Tracks if vblank interrupts enabled
-int g_frame_count = 0;
 
 
 Mix_Music *mus_intro;
@@ -217,7 +232,8 @@ void loadROM(const char *filename, std::size_t where, std::size_t size)
 void resetGame()
 {
     playMusic(NULL, false);
-    // @TODO@ - clear sound effects too
+    Mix_HaltChannel(-1);                // Stop sound effects
+    std::fill(g_sound_regs, g_sound_regs+NUM_SOUNDS, false);
     IN0 = 0;
     IN1 = 0;
     IN2 = 0;
@@ -416,11 +432,17 @@ void playMusic(Mix_Music *what, bool loop)
 {
     static Mix_Music *prev_tune = NULL;
 
+    // This is necessary because most music is controlled by the same
+    // sound register as these effects, so a command to play music
+    // means we're NOT playing one of these sound effects right now.
+    g_sound_regs[SND_HAMMERHIT] = 0;
+    g_sound_regs[SND_RIVET] = 0;
+
     if(what != prev_tune)
     {
         if(what != NULL)
         {
-            // Crude hack: game keeps calling "low time" music even when
+            // @HACK@: game keeps calling "low time" music even when
             // Mario is already dead, so ignore in this case
             if(prev_tune == mus_death && what == mus_lowtime)
             {
@@ -437,15 +459,20 @@ void playMusic(Mix_Music *what, bool loop)
     }
 }
 
-void playSound(Mix_Chunk *what)
+void playSound(Mix_Chunk *what, SOUND_ID snd_reg, int value)
 {
-    // When the game plays a sound effect, it always plays it
-    // three frames in a row. Hence, we only play every third
-    // frame (i.e., mod 3).
-    if(g_frame_count % 3 == 0)
+    assert(snd_reg >= 0);
+    assert(snd_reg < NUM_SOUNDS);
+
+    // We play a sound effect ONLY if value is nonzero AND if
+    // the previous value written to this sound register was zero
+    // (Prevents sounds being triggered multiple times)
+    if(value != 0 && !g_sound_regs[snd_reg])
     {
         Mix_PlayChannel(-1, what, 0);
     }
+
+    g_sound_regs[snd_reg] = (value != 0);
 }
 
 
@@ -464,7 +491,9 @@ void writebyte(uint16 addr, uint8 value)
         switch(value)
         {
           case 0:
-            // Do nothing
+            // No sound
+            g_sound_regs[SND_HAMMERHIT] = 0;
+            g_sound_regs[SND_RIVET] = 0;
             break;
           case 1:
             playMusic(mus_intro, false);
@@ -484,7 +513,7 @@ void writebyte(uint16 addr, uint8 value)
             break;
           case 6:
             // Hammer hit
-            playSound(snd_hammerhit);
+            playSound(snd_hammerhit, SND_HAMMERHIT, value);
             break;
           case 7:
             playMusic(mus_screencomplete, false);
@@ -507,7 +536,7 @@ void writebyte(uint16 addr, uint8 value)
             break;
           case 13:
             // Rivet removed
-            playSound(snd_score);
+            playSound(snd_score, SND_RIVET, value);
             break;
           case 14:
             // Kong's about to fall
@@ -520,29 +549,29 @@ void writebyte(uint16 addr, uint8 value)
             std::cerr << "Unknown tune/sfx: " << int(value) << std::endl;
         }
     }
-    else if(addr == 0x7d00 && value != 0)
+    else if(addr == 0x7d00)
     {
         // Walk noise
     }
-    else if(addr == 0x7d01 && value != 0)
+    else if(addr == 0x7d01)
     {
-        playSound(snd_jump);
+        playSound(snd_jump, SND_JUMP, value);
     }
-    else if(addr == 0x7d02 && value != 0)
+    else if(addr == 0x7d02)
     {
-        playSound(snd_boom);
+        playSound(snd_boom, SND_BOOM, value);
     }
-    else if(addr == 0x7d03 && value != 0)
+    else if(addr == 0x7d03)
     {
-        playSound(snd_spring);
+        playSound(snd_spring, SND_SPRING, value);
     }
-    else if(addr == 0x7d04 && value != 0)
+    else if(addr == 0x7d04)
     {
-        playSound(snd_fall);
+        playSound(snd_fall, SND_FALL, value);
     }
-    else if(addr == 0x7d05 && value != 0)
+    else if(addr == 0x7d05)
     {
-        playSound(snd_score);
+        playSound(snd_score, SND_SCORE, value);
     }
     else if(addr == 0x7d80 && value != 0)
     {
@@ -649,6 +678,6 @@ bool doFrame()
     // @FIXME@ -- keep track of FPS
     // (or find better timing mechanism)
     SDL_Delay(10);
-    ++g_frame_count;
+
     return true;
 }

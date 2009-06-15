@@ -18,4 +18,9 @@ TODO:
 * Does WIN32 get #define'd on MinGW? What about Cygwin?
 * Picking up hammer spams "score" sound for 67 frames -- what to do? May be best to analyze how the original hardware worked...
 * Are the sparks circling DK's head when he falls supposed to be dark orange or bright orange?
-* Game occasionally (but rarely) crashes on exit (by clicking X in corner)
+* Game occasionally (but rarely) crashes on exit (by clicking X in corner of SDL window)
+* Move source to a 'src' directory?
+
+
+Sound code:
+* Hammer grab sound plays only once, not twice, when Mario picks up hammer. (This is because the game spams the "score" sound register for 64 frames, expecting the sound to play again after it finishes the first time.)
