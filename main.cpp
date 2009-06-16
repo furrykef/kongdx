@@ -300,8 +300,8 @@ void drawScreen()
 
         src.x = sprite_id*SPRITE_SIZE;
 
-        dest.x = (RAM[offset] - 23)*(SPRITE_SIZE/8);
-        dest.y = (RAM[offset+3] - 8)*(SPRITE_SIZE/8);
+        dest.x = (RAM[offset] - 23)*(SPRITE_SIZE/16);
+        dest.y = (RAM[offset+3] - 8)*(SPRITE_SIZE/16);
 
         SDL_BlitSurface(sprite_surfs[sprite_surf_idx], &src, screen, &dest);
     }
