@@ -1,4 +1,5 @@
 /*
+    Kong DX - an enhanced Donkey Kong emulator
     Copyright 2009 Kef Schecter
 
     This program is free software; you can redistribute it and/or modify
@@ -23,10 +24,13 @@
 #include "SDL_mixer.h"
 #include "z80/z80.h"
 
-const int SCREEN_WIDTH = 448;
-const int SCREEN_HEIGHT = 512;
+const int TILE_SIZE = 16;
+const int SPRITE_SIZE = TILE_SIZE*2;
+const int SCREEN_WIDTH = TILE_SIZE*28;
+const int SCREEN_HEIGHT = TILE_SIZE*32;
 const int SCREEN_BPP = 32;
 const int AUDIO_BUF_SIZE = 4096;    // @TODO@ -- what value to use?
+const int JOY_THRESHOLD = 8192;
 
 enum SOUND_ID
 {
@@ -356,20 +360,20 @@ void handleInput()
         Sint16 x = SDL_JoystickGetAxis(joy, 0);
         Sint16 y = SDL_JoystickGetAxis(joy, 1);
 
-        if(x > 8192)
+        if(x > JOY_THRESHOLD)
         {
             IN0 |= 1;
         }
-        else if(x < -8192)
+        else if(x < -JOY_THRESHOLD)
         {
             IN0 |= 2;
         }
 
-        if(y < -8192)
+        if(y < -JOY_THRESHOLD)
         {
             IN0 |= 4;
         }
-        else if(y > 8192)
+        else if(y > JOY_THRESHOLD)
         {
             IN0 |= 8;
         }
