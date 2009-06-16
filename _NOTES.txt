@@ -20,7 +20,19 @@ TODO:
 * Are the sparks circling DK's head when he falls supposed to be dark orange or bright orange?
 * Game occasionally (but rarely) crashes on exit (by clicking X in corner of SDL window)
 * Move source to a 'src' directory?
+* Optimization flags?
 
 
 Sound code:
 * Hammer grab sound plays only once, not twice, when Mario picks up hammer. (This is because the game spams the "score" sound register for 64 frames, expecting the sound to play again after it finishes the first time.)
+
+
+Regarding skipping music:
+<EvanR> if its just music, you can create your own music callback
+<EvanR> then it will loop
+
+Using Mix_Chunk instead of Mix_Music also solves the problem, but I don't know if I want to go in that direction, since the music could get pretty big if the user has a lot of big OGGs.
+
+
+To try out eventually:
+Instead of using a readbyte function, simply allocate a 64KB array for your memory space and have all read operations simply read directly from it. (The same can't be done for writes, since DK does write to what would be ROM space.) Could speed up the Z80 emulator a lot...
