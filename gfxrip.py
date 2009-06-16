@@ -104,7 +104,6 @@ tile_palettes = [
     pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,  pal_girder,
     pal_girder,  pal_girder,  pal_girder,  pal_grey,    pal_girder,  pal_girder,  pal_grey,    pal_mario,
 ]
-tile_palettes[255] = pal_mario
 
 tile_files = [
     "v_5h_b.bin",
