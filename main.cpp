@@ -253,21 +253,21 @@ void drawScreen()
     /*** Draw tiles ***/
     // These never change in the loop
     src.y = 0;
-    src.w = 16;
-    src.h = 16;
-    dest.w = 16;
-    dest.h = 16;
+    src.w = TILE_SIZE;
+    src.h = TILE_SIZE;
+    dest.w = TILE_SIZE;
+    dest.h = TILE_SIZE;
 
     for(int y = 0; y < 32; ++y)
     {
         for(int x = 0; x < 32; ++x)
         {
             int tile_id = VRAM[y*32+x];
-            src.x = tile_id*16;
+            src.x = tile_id*TILE_SIZE;
 
             // Note that we're rotating the display 90 degrees here
-            dest.x = (29-y)*16;
-            dest.y = x*16;
+            dest.x = (29-y)*TILE_SIZE;
+            dest.y = x*TILE_SIZE;
  
             SDL_BlitSurface(tiles, &src, screen, &dest);
         }
@@ -276,10 +276,10 @@ void drawScreen()
     /*** Draw sprites ***/
     // These never change in the loop
     src.y = 0;
-    src.w = 32;
-    src.h = 32;
-    dest.w = 32;
-    dest.w = 32;
+    src.w = SPRITE_SIZE;
+    src.h = SPRITE_SIZE;
+    dest.w = SPRITE_SIZE;
+    dest.w = SPRITE_SIZE;
 
     for(int offset = 0x900; offset < 0xa80; offset += 4)
     {
@@ -298,7 +298,7 @@ void drawScreen()
             sprite_surf_idx |= 2;
         }
 
-        src.x = sprite_id*32;
+        src.x = sprite_id*SPRITE_SIZE;
 
         dest.x = (RAM[offset] - 23)*2;
         dest.y = (RAM[offset+3] - 8)*2;
@@ -389,7 +389,7 @@ SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip)
 {
     SDL_Surface *surf = SDL_CreateRGBSurface(
         SDL_SWSURFACE,
-        4096, 32, 24,
+        SPRITE_SIZE*128, SPRITE_SIZE, 24,
         src->format->Rmask,
         src->format->Gmask,
         src->format->Bmask,
@@ -400,25 +400,25 @@ SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip)
     // Note: No locking necessary since we're working solely with software surfaces
     char *src_pixels = static_cast<char *>(src->pixels);
     char *dst_pixels = static_cast<char *>(surf->pixels);
-    for(int i = 0; i < 4096*32; ++i)
+    for(int i = 0; i < (SPRITE_SIZE*128)*SPRITE_SIZE; ++i)
     {
-        int sprite_num = (i % 4096)/32;
-        int sprite_x = i%32;
-        int sprite_y = i/4096;
+        int sprite_num = (i % (SPRITE_SIZE*128))/SPRITE_SIZE;
+        int sprite_x = i%SPRITE_SIZE;
+        int sprite_y = i/(SPRITE_SIZE*128);
 
         if(hflip)
         {
-            sprite_x = 31 - sprite_x;
+            sprite_x = (SPRITE_SIZE-1) - sprite_x;
         }
 
         if(vflip)
         {
-            sprite_y = 31 - sprite_y;
+            sprite_y = (SPRITE_SIZE-1) - sprite_y;
         }
 
-        int src_x = sprite_num*32 + sprite_x;
+        int src_x = sprite_num*SPRITE_SIZE + sprite_x;
 
-        int src_idx = (sprite_y*4096+src_x)*3;
+        int src_idx = (sprite_y*(SPRITE_SIZE*128)+src_x)*3;
         int dst_idx = i*3;
 
         dst_pixels[dst_idx] = src_pixels[src_idx];
