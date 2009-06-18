@@ -22,6 +22,9 @@ TODO:
 * Move source to a 'src' directory?
 * Optimization flags?
 * Get palette colors from the PROMs?
+* Exception handling?
+* Does cmake need to be told about header files?
+* Switch to using 32 bpp instead of 24 bpp in code that processes image data?
 
 
 Sound code:
@@ -35,7 +38,10 @@ Regarding skipping music:
 Using Mix_Chunk instead of Mix_Music also solves the problem, but I don't know if I want to go in that direction, since the music could get pretty big if the user has a lot of big OGGs.
 
 
-To try out eventually:
-Instead of using a readbyte function, simply allocate a 64KB array for your memory space and have all read operations simply read directly from it. (The same can't be done for writes, since DK does write to what would be ROM space.) Could speed up the Z80 emulator a lot...
-
-(This does provide real gains -- the original version runs 1 billion cycles in 47 seconds and the optimized one runs in 33.5 seconds on my machine -- but it probably only makes a difference on systems that are so old that they'd probably have other problems running the emulator, like no decent OpenGL support.)
+Palette swapping:
+* Girders (red in barrels, orange in pie factory)
+* Rivet girders (flash on title screen)
+* Ladders (cyan in barrels, orange in rivets, white in pie factory)
+* Bonus timer (outer color same as girder color)
+* Vertical bar (holds up girder in rivet stage; elevator shaft in elevator stage)
+* Text

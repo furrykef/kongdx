@@ -19,16 +19,13 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
-#include <fstream>
 #include "SDL.h"
 #include "SDL_mixer.h"
+#include "file.h"
+#include "gfxrip.h"
+#include "video.h"
 #include "z80/z80.h"
 
-const int TILE_SIZE = 16;
-const int SPRITE_SIZE = TILE_SIZE*2;
-const int SCREEN_WIDTH = TILE_SIZE*28;
-const int SCREEN_HEIGHT = TILE_SIZE*32;
-const int SCREEN_BPP = 32;
 const int AUDIO_BUF_SIZE = 4096;    // @TODO@ -- what value to use?
 const int JOY_THRESHOLD = 8192;
 
@@ -48,7 +45,6 @@ bool g_sound_regs[NUM_SOUNDS];
 
 void runZ80();
 void loadROMs(const char *romset);
-void loadROM(const char *filename, std::size_t where, std::size_t size);
 void resetGame();
 void drawScreen();
 void handleInput();
@@ -126,18 +122,21 @@ int main(int argc, char *argv[])
     screen = SDL_SetVideoMode(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_BPP, SDL_SWSURFACE);
     SDL_WM_SetCaption("Kong DX", "Kong DX");
 
-    SDL_Surface *tmp = SDL_LoadBMP("tiles.bmp");
-    tiles = SDL_ConvertSurface(tmp, screen->format, SDL_SWSURFACE);
-    SDL_FreeSurface(tmp);
+    SDL_Surface *tmp1, *tmp2;
+    ripGfxROMs(romset, &tmp1, &tmp2);
 
-    tmp = SDL_LoadBMP("sprites.bmp");
-    SDL_SetColorKey(tmp, SDL_SRCCOLORKEY, 0);
-    sprite_surfs[1] = makeFlippedSprites(tmp, true, false);
-    sprite_surfs[2] = makeFlippedSprites(tmp, false, true);
-    sprite_surfs[3] = makeFlippedSprites(tmp, true, true);
-    // We have to do this last since makeFlippedSprites requires 24-bit color
-    sprite_surfs[0] = SDL_ConvertSurface(tmp, screen->format, SDL_SWSURFACE);
-    SDL_FreeSurface(tmp);
+    //tmp1 = SDL_LoadBMP("tiles.bmp");
+    tiles = SDL_ConvertSurface(tmp1, screen->format, SDL_SWSURFACE);
+    SDL_FreeSurface(tmp1);
+
+    //tmp2 = SDL_LoadBMP("sprites.bmp");
+    SDL_SetColorKey(tmp2, SDL_SRCCOLORKEY, 0);
+    sprite_surfs[1] = makeFlippedSprites(tmp2, true, false);
+    sprite_surfs[2] = makeFlippedSprites(tmp2, false, true);
+    sprite_surfs[3] = makeFlippedSprites(tmp2, true, true);
+    // We have to do this last since makeFlippedSprites requires 32-bit color
+    sprite_surfs[0] = SDL_ConvertSurface(tmp2, screen->format, SDL_SWSURFACE);
+    SDL_FreeSurface(tmp2);
 
     Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, AUDIO_BUF_SIZE);
     mus_intro = Mix_LoadMUS("sounds/dkong/intro.ogg");
@@ -210,26 +209,19 @@ void loadROMs(const char *romset)
 {
     if(strcmp(romset, "dkong") == 0)
     {
-        loadROM("roms/dkong/c_5et_g.bin", 0, 0x1000);
-        loadROM("roms/dkong/c_5ct_g.bin", 0x1000, 0x1000);
-        loadROM("roms/dkong/c_5bt_g.bin", 0x2000, 0x1000);
-        loadROM("roms/dkong/c_5at_g.bin", 0x3000, 0x1000);
+        readFile("roms/dkong/c_5et_g.bin", &ROM[0],      0x1000);
+        readFile("roms/dkong/c_5ct_g.bin", &ROM[0x1000], 0x1000);
+        readFile("roms/dkong/c_5bt_g.bin", &ROM[0x2000], 0x1000);
+        readFile("roms/dkong/c_5at_g.bin", &ROM[0x3000], 0x1000);
     }
     else
     {
-        // Assume dkongjp for now
-        loadROM("roms/dkongjp/c_5f_b.bin", 0, 0x1000);
-        loadROM("roms/dkongjp/5g.cpu", 0x1000, 0x1000);
-        loadROM("roms/dkongjp/5h.cpu", 0x2000, 0x1000);
-        loadROM("roms/dkongjp/c_5k_b.bin", 0x3000, 0x1000);
+        // @FIXME@ - just assume dkongjp for now
+        readFile("roms/dkongjp/c_5f_b.bin", &ROM[0],      0x1000);
+        readFile("roms/dkongjp/5g.cpu",     &ROM[0x1000], 0x1000);
+        readFile("roms/dkongjp/5h.cpu",     &ROM[0x2000], 0x1000);
+        readFile("roms/dkongjp/c_5k_b.bin", &ROM[0x3000], 0x1000);
     }
-}
-
-// @XXX@ -- no error checking
-void loadROM(const char *filename, std::size_t where, std::size_t size)
-{
-    std::ifstream rom_file(filename, std::ifstream::in | std::ifstream::binary);
-    rom_file.read(reinterpret_cast<char *>(&ROM[where]), size);
 }
 
 
@@ -300,8 +292,8 @@ void drawScreen()
 
         src.x = sprite_id*SPRITE_SIZE;
 
-        dest.x = (RAM[offset] - 23)*(SPRITE_SIZE/16);
-        dest.y = (RAM[offset+3] - 8)*(SPRITE_SIZE/16);
+        dest.x = (RAM[offset] - 23)*GFX_SCALE;
+        dest.y = (RAM[offset+3] - 8)*GFX_SCALE;
 
         SDL_BlitSurface(sprite_surfs[sprite_surf_idx], &src, screen, &dest);
     }
@@ -389,7 +381,7 @@ SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip)
 {
     SDL_Surface *surf = SDL_CreateRGBSurface(
         SDL_SWSURFACE,
-        SPRITE_SIZE*128, SPRITE_SIZE, 24,
+        SPRITE_SIZE*128, SPRITE_SIZE, 32,
         src->format->Rmask,
         src->format->Gmask,
         src->format->Bmask,
@@ -398,8 +390,8 @@ SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip)
     SDL_SetColorKey(surf, SDL_SRCCOLORKEY, 0);
 
     // Note: No locking necessary since we're working solely with software surfaces
-    char *src_pixels = static_cast<char *>(src->pixels);
-    char *dst_pixels = static_cast<char *>(surf->pixels);
+    Uint32 *src_pixels = static_cast<Uint32 *>(src->pixels);
+    Uint32 *dst_pixels = static_cast<Uint32 *>(surf->pixels);
     for(int i = 0; i < (SPRITE_SIZE*128)*SPRITE_SIZE; ++i)
     {
         int sprite_num = (i % (SPRITE_SIZE*128))/SPRITE_SIZE;
@@ -417,13 +409,8 @@ SDL_Surface *makeFlippedSprites(SDL_Surface *src, bool hflip, bool vflip)
         }
 
         int src_x = sprite_num*SPRITE_SIZE + sprite_x;
-
-        int src_idx = (sprite_y*(SPRITE_SIZE*128)+src_x)*3;
-        int dst_idx = i*3;
-
-        dst_pixels[dst_idx] = src_pixels[src_idx];
-        dst_pixels[dst_idx+1] = src_pixels[src_idx+1];
-        dst_pixels[dst_idx+2] = src_pixels[src_idx+2];
+        int src_idx = (sprite_y*(SPRITE_SIZE*128)+src_x);
+        dst_pixels[i] = src_pixels[src_idx];
     }
 
     SDL_Surface *conv_surf = SDL_ConvertSurface(surf, screen->format, SDL_SWSURFACE);

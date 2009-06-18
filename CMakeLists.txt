@@ -13,4 +13,4 @@ link_libraries(
 )
 
 
-add_executable(kongdx main.cpp z80/z80.cpp z80/z80_ops.cpp)
+add_executable(kongdx main.cpp file.cpp gfxrip.cpp z80/z80.cpp z80/z80_ops.cpp)
