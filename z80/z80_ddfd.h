@@ -442,7 +442,7 @@
 	opcode3 = Z80_RB_MACRO( PC );
 	contend_read( PC, 1 ); contend_read( PC, 1 ); PC++;
 	switch(opcode3) {
-#include "z80_ddfdcb.c"
+#include "z80_ddfdcb.h"
 	}
       }
       break;

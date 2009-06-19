@@ -17,9 +17,8 @@ TODO:
 * Optimization flags?
 * Get palette colors from the PROMs?
 * Exception handling?
-* Does cmake need to be told about header files?
 * Use RAII/scope guards for locking surfaces?
-* Find out differences in Z80 core between Desmume, VBA, etc.
+* Find out differences in Z80 core between Mednafen, VBA, etc.
 
 
 Sound code:

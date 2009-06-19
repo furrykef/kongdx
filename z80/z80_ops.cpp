@@ -67,7 +67,7 @@ int z80_do_opcode( void )
 
     switch(opcode) 
     {
-     #include "opcodes_base.c"
+     #include "opcodes_base.h"
     }
 
    int ret = z80_tstates - last_z80_tstates;
