@@ -43,7 +43,6 @@ enum SOUND_ID
 
 bool g_sound_regs[NUM_SOUNDS];
 
-void runZ80();
 void loadROMs(const char *romset);
 void resetGame();
 void drawScreen();
@@ -56,6 +55,8 @@ uint8 readbyte(uint16);
 void writeport(uint16, uint8);
 uint8 readport(uint16);
 bool doFrame();
+void doZ80();
+bool handleEvents();
 
 unsigned char ROM[0x4000];
 unsigned char RAM[0x1000];
@@ -65,7 +66,6 @@ SDL_Surface *screen;
 SDL_Surface *tiles;
 SDL_Surface *sprite_surfs[4];   // 0 = no flip, 1 = horizontal flip, etc.
 bool g_vblank_enabled;          // Tracks if vblank interrupts enabled
-Uint32 g_prev_ticks;
 
 
 Mix_Music *mus_intro;
@@ -172,38 +172,16 @@ int main(int argc, char *argv[])
     z80_writeport = writeport;
 
     resetGame();
-    runZ80();
+
+    while(doFrame())
+    {
+        // Just keep runnin' the loop
+    }
 
     // @XXX@ - cleanup (release surfaces, joys, etc.)?
     Mix_CloseAudio();
     SDL_Quit();
     return 0;
-}
-
-void runZ80()
-{
-    int cycle_count = 0;
-    for(;;)
-    {
-        z80_do_opcode();
-        ++cycle_count;
-        if(cycle_count >= CYCLES_PER_VBLANK)
-        {
-            // Z80 has hit vblank
-            if(g_vblank_enabled)
-            {
-                z80_nmi();
-            }
-
-            // Handle events and draw
-            if(!doFrame())
-            {
-                return;
-            }
-
-            cycle_count -= CYCLES_PER_VBLANK;
-        }
-    }
 }
 
 void loadROMs(const char *romset)
@@ -237,8 +215,6 @@ void resetGame()
     DSW1 = DIP_FACTORY;
     g_vblank_enabled = false;
     z80_reset();
-
-    g_prev_ticks = SDL_GetTicks();
 }
 
 void drawScreen()
@@ -631,7 +607,47 @@ uint8 readport(uint16 port)
 //  false = exit program
 bool doFrame()
 {
-    // SDL events
+    Uint32 start_time = SDL_GetTicks();
+
+    doZ80();
+
+    if(!handleEvents())
+    {
+        return false;
+    }
+
+    handleInput();
+
+    drawScreen();
+    SDL_Flip(screen);
+
+    // Lock frame rate
+    Uint32 end_time = SDL_GetTicks();
+    Uint32 diff = end_time - start_time;
+    if(diff < 1000/FRAMES_PER_SECOND)
+    {
+        SDL_Delay(1000/FRAMES_PER_SECOND - diff);
+    }
+
+    return true;
+}
+
+void doZ80()
+{
+    for(int cycle = 0; cycle < CYCLES_PER_VBLANK; ++cycle)
+    {
+        z80_do_opcode();
+    }
+
+    // Z80 has hit vblank
+    if(g_vblank_enabled)
+    {
+        z80_nmi();
+    }
+}
+
+bool handleEvents()
+{
     SDL_Event evt;
     while(SDL_PollEvent(&evt))
     {
@@ -663,20 +679,6 @@ bool doFrame()
             return false;
         }
     }
-
-    handleInput();
-
-    drawScreen();
-    SDL_Flip(screen);
-
-    // Lock frame rate
-    Uint32 ticks = SDL_GetTicks();
-    Uint32 diff = ticks - g_prev_ticks;
-    if(diff < 1000/FRAMES_PER_SECOND)
-    {
-        SDL_Delay(1000/FRAMES_PER_SECOND - diff);
-    }
-    g_prev_ticks = SDL_GetTicks();
 
     return true;
 }
