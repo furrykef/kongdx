@@ -65,6 +65,7 @@ SDL_Surface *screen;
 SDL_Surface *tiles;
 SDL_Surface *sprite_surfs[4];   // 0 = no flip, 1 = horizontal flip, etc.
 bool g_vblank_enabled;          // Tracks if vblank interrupts enabled
+Uint32 g_prev_ticks;
 
 
 Mix_Music *mus_intro;
@@ -236,6 +237,8 @@ void resetGame()
     DSW1 = DIP_FACTORY;
     g_vblank_enabled = false;
     z80_reset();
+
+    g_prev_ticks = SDL_GetTicks();
 }
 
 void drawScreen()
@@ -666,9 +669,14 @@ bool doFrame()
     drawScreen();
     SDL_Flip(screen);
 
-    // @FIXME@ -- keep track of FPS
-    // (or find better timing mechanism)
-    SDL_Delay(10);
+    // Lock frame rate
+    Uint32 ticks = SDL_GetTicks();
+    Uint32 diff = ticks - g_prev_ticks;
+    if(diff < 1000/FRAMES_PER_SECOND)
+    {
+        SDL_Delay(1000/FRAMES_PER_SECOND - diff);
+    }
+    g_prev_ticks = SDL_GetTicks();
 
     return true;
 }

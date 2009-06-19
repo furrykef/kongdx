@@ -24,6 +24,7 @@ const int SPRITE_SIZE = TILE_SIZE*2;
 const int SCREEN_WIDTH = TILE_SIZE*28;
 const int SCREEN_HEIGHT = TILE_SIZE*32;
 const int SCREEN_BPP = 32;
+const int FRAMES_PER_SECOND = 60;
 
 const int GFX_SCALE = TILE_SIZE/8;
 

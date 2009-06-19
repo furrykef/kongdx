@@ -1,19 +1,39 @@
 Running the emulator
 --------------------
-It's currently a little difficult to run the emulator, since the
-graphics files need to be generated beforehand. But the general
-procedure is this:
-
 Unzip dkong.zip (the MAME ROMs) to the roms\dkong folder. I.e.,
 if Kong DX is installed in C:\KongDX, then unzip your ROMs to the
 C:\KongDX\roms\dkong folder.
 
-After you have extracted the ROMs, run the Python script gfxrip.py.
-(The script is written for Python 2.5.) It should create two files
-named tiles.bmp and sprites.bmp. You will still need your ROMs, so
-don't delete them afterward.
-
 The emulator is now ready to run. :)
+
+
+Sound
+-----
+To get sound, place the following files in the folder "sounds/dkong".
+Currently you need to provide these files yourself.
+
+Music:
+* intro.ogg
+* howhigh.ogg
+* barrels.ogg
+* pies.ogg
+* springs.ogg
+* rivets.ogg
+* hammer.ogg
+* screencomplete.ogg
+* kongfall.ogg
+* rescue1.ogg
+* rescue2.ogg
+* lowtime.ogg
+* death.ogg
+
+Sound effects:
+* boom.ogg
+* jump.ogg
+* spring.ogg
+* hammerhit.ogg
+* fall.ogg
+* score.ogg
 
 
 Japanese version
@@ -43,7 +63,6 @@ the American ROMs.
 Then, from the command line, run Kong DX with this command:
 
   kongdx dkongjp
-
 
 
 Building the source

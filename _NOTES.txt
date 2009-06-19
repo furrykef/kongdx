@@ -1,30 +1,25 @@
 TODO:
 * Z80 core GPL compliance (note changes and date of change)
-* Too many global variables
+* Too many global variables?
 * Not enough modularity?
-* No error checking (esp. checking to see if files aren't found or are wrong dimensions/bpp)
+* No error checking (esp. checking to see if files aren't found or are wrong dimensions/bpp/size in bytes)
 * Z80 code gives lots of warnings in VC++
 * Make SDL_mixer optional instead of required
 * Use OpenGL instead of SDL for video (higher performance)?
 * We don't reload graphics when toggling fullscreen (fullscreen mode may have different pixel format)
-* Improper speed throttling
-* Improper method of playing SFX (doesn't allow overlapping sounds of the same type, so will occasionally drop samples)
 * Game assumes you're launching it from CWD (especially unlikely to be true on Unix)
 * dkongjp has a different gfx ROM from dkong. What is the difference?
 * CRC check ROMs
-* Integrate functionality of gfxrip.py into emulator
-* Allow ripping graphics from e.g. Japanese ROM
 * Donkey Kong Junior? Mario Bros.?
 * Does WIN32 get #define'd on MinGW? What about Cygwin?
-* Picking up hammer spams "score" sound for 67 frames -- what to do? May be best to analyze how the original hardware worked...
-* Are the sparks circling DK's head when he falls supposed to be dark orange or bright orange?
 * Game occasionally (but rarely) crashes on exit (by clicking X in corner of SDL window)
 * Move source to a 'src' directory?
 * Optimization flags?
 * Get palette colors from the PROMs?
 * Exception handling?
 * Does cmake need to be told about header files?
-* Switch to using 32 bpp instead of 24 bpp in code that processes image data?
+* Use RAII/scope guards for locking surfaces?
+* Find out differences in Z80 core between Desmume, VBA, etc.
 
 
 Sound code:
@@ -45,3 +40,4 @@ Palette swapping:
 * Bonus timer (outer color same as girder color)
 * Vertical bar (holds up girder in rivet stage; elevator shaft in elevator stage)
 * Text
+* "Help!" (color same as ladder color)
